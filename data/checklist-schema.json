@@ -1,0 +1,43 @@
+{
+  "$schemaVersion": "1.0.0",
+  "description": "Schema for conditional travel checklist task generation.",
+  "entities": {
+    "scenario": {
+      "destinationCountry": "string",
+      "departureCountry": "string",
+      "passportCountry": "string",
+      "arrivalDate": "ISO8601",
+      "departureDate": "ISO8601",
+      "purpose": "tourism|business|study|other",
+      "budgetLevel": "budget|midrange|premium",
+      "transportStyle": "public|ridehail|mixed",
+      "groupType": "solo|couple|family|friends"
+    },
+    "taskRule": {
+      "id": "string",
+      "country": "string",
+      "category": "visa|immigration|connectivity|money|transport|weather|stay|departure",
+      "title": "string",
+      "description": "string",
+      "timing": {
+        "anchor": "arrival|departure",
+        "offsetDays": "number",
+        "defaultHourLocal": "number"
+      },
+      "conditions": {
+        "passportCountriesIn": ["string"],
+        "passportCountriesNotIn": ["string"],
+        "purposeIn": ["tourism|business|study|other"],
+        "transportStyleIn": ["public|ridehail|mixed"],
+        "budgetLevelIn": ["budget|midrange|premium"]
+      },
+      "links": [
+        {
+          "label": "string",
+          "url": "string"
+        }
+      ],
+      "priority": "high|medium|low"
+    }
+  }
+}

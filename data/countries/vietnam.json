@@ -1,0 +1,208 @@
+{
+  "country": "Vietnam",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "tasks": [
+    {
+      "id": "vn-visa-check",
+      "category": "visa",
+      "title": "Confirm Vietnam entry eligibility",
+      "description": "Check whether your passport is visa-exempt or requires an e-visa before travel.",
+      "timing": { "anchor": "arrival", "offsetDays": -30, "defaultHourLocal": 9 },
+      "reminderEligible": true,
+      "priority": "high",
+      "links": [
+        { "label": "Vietnam Immigration Portal", "url": "https://evisa.gov.vn/" }
+      ]
+    },
+    {
+      "id": "vn-immigration-docs",
+      "category": "immigration",
+      "title": "Prepare immigration documents",
+      "description": "Carry passport, onward ticket, and accommodation confirmation for arrival screening. Remember to download or screenshot your visa for easy access on arrival day.",
+      "timing": { "anchor": "arrival", "offsetDays": -7, "defaultHourLocal": 10 },
+      "reminderEligible": true,
+      "priority": "high",
+      "links": []
+    },
+    {
+      "id": "vn-arriving-in-vietnam",
+      "category": "immigration",
+      "title": "Arriving in Vietnam",
+      "description": "Arrival immigration and customs can take 2-3 hours, depending on timing, and e-passport processing is limited. Paid fast-track is available for a shorter queue, but wait times still vary widely. If you choose fast-track, expect anything from about 10 to 45 minutes.",
+      "timing": { "anchor": "arrival", "offsetDays": 0, "defaultHourLocal": 12 },
+      "reminderEligible": false,
+      "priority": "medium",
+      "fastTrackOptions": [
+        {
+          "platform": "Klook",
+          "url": "https://www.klook.com/invite/JAMJRK?c=VND",
+          "avgPrice": "$20 - $32",
+          "contactMethod": "WhatsApp / Email",
+          "bestFor": "Speed & Reliability"
+        },
+        {
+          "platform": "Pelago",
+          "url": "https://pel.sg/XoeOwD",
+          "avgPrice": "$25 - $35",
+          "contactMethod": "WhatsApp",
+          "bestFor": "Miles users / Service quality"
+        }
+      ],
+      "links": []
+    },
+    {
+      "id": "vn-esim-setup",
+      "category": "connectivity",
+      "title": "Choose and Set Up eSIM",
+      "description": "Compare eSIM options before you buy (estimated pricing).",
+      "timing": { "anchor": "arrival", "offsetDays": -3, "defaultHourLocal": 11 },
+      "hideDueDate": true,
+      "reminderEligible": true,
+      "priority": "medium",
+      "esimProviders": [
+        {
+          "provider": "Jetpac",
+          "url": "https://www.jetpacglobal.com/",
+          "bestFor": "Budget / Value",
+          "estimatedPrice": "~$17.00 (10GB)",
+          "coverage": "200+ Countries",
+          "hotspotSupport": "Unlimited"
+        },
+        {
+          "provider": "Holafly",
+          "url": "http://rwrd.io/ly5ahdb",
+          "bestFor": "Unlimited Data",
+          "estimatedPrice": "~$64.90 (Month)",
+          "coverage": "200+ Countries",
+          "hotspotSupport": "Capped (500MB/day)"
+        },
+        {
+          "provider": "Saily",
+          "url": "https://saily.com/",
+          "bestFor": "Security / VPN",
+          "estimatedPrice": "~$19.99 (10GB)",
+          "coverage": "180+ Countries",
+          "hotspotSupport": "Yes"
+        },
+        {
+          "provider": "Airalo",
+          "url": "https://www.airalo.com/",
+          "bestFor": "Reliability",
+          "estimatedPrice": "~$20.00 (10GB)",
+          "coverage": "200+ Countries",
+          "hotspotSupport": "Yes"
+        },
+        {
+          "provider": "Ezy eSIM",
+          "url": "https://ezyesim.com/",
+          "bestFor": "SE Asia / Vietnam",
+          "estimatedPrice": "~$16.00 (10GB)",
+          "coverage": "130+ Countries",
+          "hotspotSupport": "Yes"
+        }
+      ],
+      "links": []
+    },
+    {
+      "id": "vn-money-plan",
+      "category": "money",
+      "title": "Paying for things: Cash or Card or other",
+      "description": "Most places accept contactless card payments (about 80%), and many call it Apple Pay.\n- Keep some cash for smaller shops and local spots.\n- ATM withdrawals are often capped at around 3,000,000 VND per withdrawal, but limits vary by bank.\n- Card providers like UP, ING, Ubank, Wise, and Revolut can differ on ATM fee refunds and FX rates, so check your account terms first.\n- Backup option: transfer to my PayID and I can withdraw from my Vietnam account.\n- QR payments are common via local bank apps; Moreta is another option people recommend across parts of Southeast Asia (I have not used it yet).",
+      "timing": { "anchor": "arrival", "offsetDays": -5, "defaultHourLocal": 13 },
+      "hideDueDate": true,
+      "reminderEligible": false,
+      "priority": "high",
+      "links": []
+    },
+    {
+      "id": "vn-grab-install",
+      "category": "transport",
+      "title": "Pick Ride-Share Apps",
+      "description": "Pick 1 or 2 ride-share apps before arrival for airport transfers and city navigation. Most apps can link to a local bank account or local e-wallet for smooth cashless payments (while still supporting cash in many cases).",
+      "timing": { "anchor": "arrival", "offsetDays": -2, "defaultHourLocal": 9 },
+      "hideDueDate": true,
+      "reminderEligible": true,
+      "priority": "medium",
+      "conditions": {
+        "transportStyleIn": ["ridehail", "mixed"]
+      },
+      "rideShareApps": [
+        {
+          "app": "Grab",
+          "url": "https://www.grab.com/vn/download/",
+          "bestFor": "Availability",
+          "fleetType": "Mostly Petrol (some new EVs)",
+          "paymentOptions": "Cash, Card, MoMo, Viettel Money",
+          "keyAdvantage": "Fastest pickup times in almost any city/alleyway."
+        },
+        {
+          "app": "Xanh SM",
+          "url": "https://www.xanhsm.com/en/download/",
+          "bestFor": "Comfort & Quality",
+          "fleetType": "100% Electric (VinFast)",
+          "paymentOptions": "Cash, Card, E-wallets",
+          "keyAdvantage": "Very clean cars; professional drivers; no cancellations."
+        },
+        {
+          "app": "Be",
+          "url": "https://be.com.vn/en/#download-app",
+          "bestFor": "Local Ecosystem",
+          "fleetType": "Mixed",
+          "paymentOptions": "Apple Pay, MoMo, ZaloPay, Cash",
+          "keyAdvantage": "Best local promotions; integrates flight & bus tickets."
+        }
+      ],
+      "links": []
+    },
+    {
+      "id": "vn-public-transport",
+      "category": "transport",
+      "title": "Review Public Transport Options",
+      "description": "Ho Chi Minh City now has one operating metro line: Metro Line 1 (Ben Thanh - Suoi Tien Terminal).\n- Typical service window: around 05:00-22:00.\n- Typical frequency: around 8 min peak / 12 min off-peak.\n- Typical single-fare range: around 7,000-20,000 VND (distance based).\n- Suggested stations for most visitors: Ben Thanh, Opera House, Ba Son, Thao Dien, Suoi Tien Terminal.\n- Save your station exits and one backup bus/ride-hail route in case your final stop is not walkable.",
+      "timing": { "anchor": "arrival", "offsetDays": -2, "defaultHourLocal": 15 },
+      "hideDueDate": true,
+      "reminderEligible": false,
+      "priority": "medium",
+      "conditions": {
+        "transportStyleIn": ["public", "mixed"]
+      },
+      "links": [
+        { "label": "HCMC Metro Line 1 Overview", "url": "https://hochiminhcitymetro.com/line-1/" },
+        { "label": "HCMC Metro Tickets and Fares", "url": "https://hochiminhcitymetro.com/tickets/" },
+        { "label": "Landmarks Along Metro Line 1", "url": "https://e.vnexpress.net/news/travel/places/exploring-tourist-landmarks-entertainment-venues-along-hcmc-s-1st-metro-line-4831060.html" }
+      ]
+    },
+    {
+      "id": "vn-weather-pack",
+      "category": "weather",
+      "title": "Ho Chi Minh City weather packing",
+      "description": "Ho Chi Minh City is hot and humid year-round, so pack lightweight breathable clothing, hydration basics, and sun protection.\n- In the rainy season (May-November), add a compact rain layer and quick-dry footwear.\n- In the dry season (December-April), prioritize heat and sun comfort.",
+      "timing": { "anchor": "arrival", "offsetDays": -4, "defaultHourLocal": 17 },
+      "hideDueDate": true,
+      "reminderEligible": false,
+      "priority": "medium",
+      "links": []
+    },
+    {
+      "id": "vn-neighborhood-choice",
+      "category": "stay",
+      "title": "Neighbourhood and Stay Guidance",
+      "description": "Ho Chi Minh City neighbourhood quick guide:\n- District 1: Great for hotels across luxury and budget options, plus plenty of Airbnbs. Most central for first-timers, but often louder and pricier.\n- District 3: Mainly smaller hotels and Airbnbs, with greener and more local streets while still close to central areas.\n- District 2: Mainly Airbnbs, with a more residential/expat-friendly feel and international amenities, but typically longer commutes.\n- District 5 (Chinatown): Strong local character and food culture, usually better value, with a denser traditional feel.\nChoose based on commute time, budget, and late-night noise tolerance.",
+      "timing": { "anchor": "arrival", "offsetDays": -10, "defaultHourLocal": 10 },
+      "hideDueDate": true,
+      "reminderEligible": false,
+      "priority": "high",
+      "links": []
+    },
+    {
+      "id": "vn-departure-airport-plan",
+      "category": "departure",
+      "title": "Plan return trip to airport",
+      "description": "Book or plan transport to the airport with enough buffer for traffic and departure procedures.",
+      "timing": { "anchor": "departure", "offsetDays": -1, "defaultHourLocal": 12 },
+      "reminderEligible": false,
+      "priority": "high",
+      "links": []
+    }
+  ]
+}

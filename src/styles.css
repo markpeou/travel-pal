@@ -1,0 +1,471 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --color-text: #004e89;
+  --color-text-muted: #1a659e;
+  --color-surface: #ffffff;
+  --color-surface-complete: #fffaf4;
+  --color-shell-bg: #f8f7ff;
+  --color-shell-bg-elevated: #f8f7ff;
+  --color-border: #d4dcc4;
+  --color-tertiary: #f7c59f;
+  --color-focus: #1a659e;
+  --color-link: #004e89;
+  --color-link-hover: #1a659e;
+  --color-complete: #004e89;
+  --color-minimal-accent: #ff6b35;
+  --radius-card: 12px;
+  --space-section: 1.75rem;
+  --space-stack: 1rem;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --content-max-width: 40rem;
+  --app-padding-inline: 1rem;
+  --app-max-width: 61.25rem;
+}
+
+body {
+  margin: 0;
+  background: var(--color-shell-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #000000;
+}
+
+p {
+  color: #333333 !important;
+}
+
+/* Native controls outside MUI (e.g. calendar handoff) — avoid overriding MuiButton/MuiInput in the dialog portal */
+.calendar-actions label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.calendar-actions input,
+.calendar-actions select,
+.calendar-actions button {
+  margin-top: 4px;
+  display: inline-block;
+  padding: 6px 8px;
+}
+
+/* App shell: mobile-first padding, widens on larger screens */
+.app-shell {
+  margin-inline: auto;
+  max-width: var(--app-max-width);
+  padding-inline: var(--app-padding-inline);
+  padding-block: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .app-shell {
+    --app-padding-inline: 1.25rem;
+    padding-block: 1.5rem;
+  }
+}
+
+.app-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.app-lede {
+  margin: 0 0 var(--space-stack);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1.45;
+  max-width: var(--content-max-width);
+}
+
+@media (min-width: 640px) {
+  .app-title {
+    font-size: 1.75rem;
+  }
+}
+
+/* Checklist section */
+.checklist-section {
+  margin-top: var(--space-section);
+}
+
+.checklist-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.checklist-intro {
+  margin-bottom: var(--space-stack);
+  max-width: var(--content-max-width);
+}
+
+.checklist-intro__body {
+  margin: 0 0 0.5rem;
+  color: #333333;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.checklist-intro__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.checklist-bucket {
+  margin-bottom: var(--space-stack);
+}
+
+.checklist-bucket:last-child {
+  margin-bottom: 0;
+}
+
+.checklist-bucket-title {
+  margin: 0 0 0.375rem;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.checklist-bucket-empty {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.checklist-task-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.checklist-task-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: 0 1px 1px rgba(0, 78, 137, 0.05), 0 6px 16px rgba(0, 78, 137, 0.08);
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: start;
+  padding: 0.25rem;
+  gap: 0.25rem;
+}
+
+.checklist-task-item.is-complete {
+  background: var(--color-surface-complete);
+}
+
+.checklist-check-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.checklist-check-icon {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #89a7c1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.checklist-task-item.is-complete .checklist-check-icon {
+  background: var(--color-complete);
+  border-color: var(--color-complete);
+}
+
+.checklist-content {
+  min-width: 0;
+}
+
+.checklist-content-button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  border-radius: 10px;
+  padding: 0.625rem 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checklist-content-button.is-static {
+  cursor: default;
+}
+
+.checklist-main-line {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.checklist-task-title {
+  line-height: 1.3;
+}
+
+.checklist-task-item.is-complete .checklist-task-title {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.checklist-task-meta {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.checklist-task-badge {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 0.5rem;
+  margin: 8px 0;
+  border-radius: 999px;
+  border: 1px solid #89a7c1;
+  background: #eef6ff;
+  color: #0f4c81;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.checklist-expand-icon {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.checklist-details {
+  padding: 0 0.5rem 0.5rem;
+}
+
+.checklist-details-meta {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.checklist-details-list {
+  margin: 0;
+  padding-left: 1.125rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.checklist-details-item {
+  color: #333333;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.checklist-details-text {
+  margin: 0 0 0.625rem;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.checklist-details-item.is-tabular {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow-x: auto;
+  text-wrap: nowrap;
+}
+
+.esim-provider-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.esim-provider-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.625rem;
+  background: var(--color-surface);
+  box-shadow: 1px 2px #f0f0f0;
+}
+
+.esim-provider-name {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: #333333;
+}
+
+.esim-provider-link {
+  color: var(--color-link);
+  text-underline-offset: 2px;
+}
+
+.esim-provider-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.esim-provider-meta {
+  margin: 0;
+  display: grid;
+  gap: 0.325rem;
+}
+
+.esim-provider-meta > div {
+  display: grid;
+  grid-template-columns: minmax(92px, 34%) 1fr;
+  align-items: start;
+  gap: 0.4rem;
+}
+
+.esim-provider-meta dt {
+  margin: 0;
+  color: #333333;
+  font-size: 0.825rem;
+}
+
+.esim-provider-meta dd {
+  margin: 0;
+  color: #333333;
+  line-height: 1.35;
+}
+
+.esim-provider-card .checklist-link,
+.esim-provider-card .esim-provider-link {
+  color: #333333;
+}
+
+.checklist-details-meta {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.checklist-links-list {
+  margin: 0.625rem 0 0;
+  padding-left: 1.125rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.checklist-link {
+  color: var(--color-link);
+  text-underline-offset: 2px;
+}
+
+.checklist-link:hover,
+.esim-provider-link:hover {
+  color: var(--color-link-hover);
+}
+
+.checklist-reminder-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 8px 0;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #89a7c1;
+  border-radius: 999px;
+  background: #eef6ff;
+  color: #0f4c81;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.checklist-reminder-button:hover {
+  border-color: #1a659e;
+  background: #e3f0ff;
+}
+
+.checklist-reminder-button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.checklist-reminder-actions {
+  margin: 0 0 0.625rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+button.checklist-reminder-button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.checklist-reminder-button--apple {
+  border-color: #c8ced8;
+  background: #f6f7fa;
+  color: #24415c;
+}
+
+.checklist-reminder-button--apple:hover {
+  border-color: #8ca0b7;
+  background: #ebeff5;
+}
+
+.checklist-check-button:focus-visible,
+.checklist-content-button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.checklist-check-button:active,
+.checklist-content-button.is-expandable:active {
+  background: var(--color-tertiary);
+}
+
+.checklist-bucket-title {
+  border-left: 3px solid #ff7b00;
+  padding-left: 0.4rem;
+}
+
+@media (min-width: 640px) {
+  .checklist-task-list {
+    gap: 0.625rem;
+  }
+}
+
+.checklist-empty {
+  margin: var(--space-section) 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
