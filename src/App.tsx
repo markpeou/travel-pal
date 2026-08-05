@@ -5,7 +5,8 @@ import {
   ShieldCheck, ExternalLink, FileText, CheckCircle2, Circle, Bell,
   Zap, CreditCard, Banknote, Smartphone, CloudRain, Sun, Wind,
   AlertTriangle, Upload, Check, Compass, Utensils, Calendar, Clock,
-  Settings2, ArrowRight, Radio, Eye, Car, Bike, TrainFront, Bus, Footprints
+  Settings2, ArrowRight, Radio, Eye, Car, Bike, TrainFront, Bus, Footprints,
+  Coffee, Beer, ShoppingBag, Landmark, ArrowLeft, Search, X, Ticket, Navigation
 } from "lucide-react";
 
 /* ---------- design tokens ---------- */
@@ -92,6 +93,7 @@ const HOODS = [
     who: "First-timers, short stays, anyone who wants landmarks outside the hotel door.",
     eat: "Bánh mì Huỳnh Hoa for the city's most famous sandwich; the Café Apartment at 42 Nguyễn Huệ — nine floors of cafés in an old block.",
     watch: "Keep your phone off the kerb side of the pavement — drive-by snatching is D1's one real annoyance.",
+    dist: "D1",
   },
   {
     name: "District 1 — Bùi Viện",
@@ -101,6 +103,7 @@ const HOODS = [
     who: "Night owls, solo travellers wanting instant company, tight budgets.",
     eat: "Street seafood carts after 9pm; walk two blocks off the strip and prices halve.",
     watch: "Genuinely hard to sleep before 2am on the strip itself. Book one street back minimum.",
+    dist: "D1",
   },
   {
     name: "District 3",
@@ -110,6 +113,7 @@ const HOODS = [
     who: "Second visits, remote workers, café people, anyone allergic to tourist menus.",
     eat: "Turtle Lake (Hồ Con Rùa) street-snack scene at night; hidden villa cafés around Tú Xương street.",
     watch: "Fewer hotels — look at serviced apartments and boutique stays instead.",
+    dist: "D3",
   },
   {
     name: "Thảo Điền (District 2)",
@@ -119,6 +123,7 @@ const HOODS = [
     who: "Families, longer stays, anyone who wants quiet mornings and western comforts.",
     eat: "Brunch spots along Xuân Thủy; The Deck for sunset drinks on the river.",
     watch: "Floods at high tide after heavy rain, and you'll Grab everywhere — it's 20–30 min to D1.",
+    dist: "D2",
   },
   {
     name: "District 4",
@@ -128,6 +133,47 @@ const HOODS = [
     who: "Eaters. Sleep in D1 or D3, spend your evenings here.",
     eat: "Vĩnh Khánh street — the famous ốc (snail) alley. Point at tanks, order rounds, repeat.",
     watch: "Very few hotels worth booking; treat it as a food destination, not a base.",
+    dist: "D4",
+  },
+  {
+    name: "Chợ Lớn (District 5)",
+    price: "$",
+    tags: ["Chinatown", "Temples", "Markets"],
+    feel: "Saigon's Chinatown — incense-thick pagodas, wholesale markets and old-school cơm tấm. The most photogenic morning in the city.",
+    who: "Second visits, early risers, anyone chasing markets and temples over rooftops.",
+    eat: "Phở Lệ for southern-style broth; Bình Tây market for the real wholesale trade.",
+    watch: "Spread out and hot — plan a morning here, then Grab back before midday.",
+    dist: "D5",
+  },
+  {
+    name: "Bình Thạnh",
+    price: "$$",
+    tags: ["Local indie", "Hidden bars", "Nightlife"],
+    feel: "Where the city's most interesting hidden bars live, alongside Landmark 81 and riverside towers. Local-feeling, low-tourist.",
+    who: "Repeat visitors and night people who want bars locals actually go to.",
+    eat: "Tủ Bar behind a wardrobe door; riverside towers for the skyline view.",
+    watch: "Not walkable from D1 — arrive by Grab, and plan your ride home too.",
+    dist: "BT",
+  },
+  {
+    name: "Phú Nhuận",
+    price: "$",
+    tags: ["Residential", "Cafés", "Everyday"],
+    feel: "Quiet residential district between the airport and the centre. Neighbourhood cafés, no tourist infrastructure, real daily Saigon.",
+    who: "Long-stayers and anyone who wants to live somewhere rather than visit it.",
+    eat: "Courtyard cafés with koi ponds; Chinese dessert counters worth the detour.",
+    watch: "Little to do at night — it's a base, not a destination.",
+    dist: "PN",
+  },
+  {
+    name: "Phú Mỹ Hưng (District 7)",
+    price: "$$",
+    tags: ["Planned", "Families", "Spacious"],
+    feel: "Wide boulevards, actual footpaths and a large Korean and Japanese community. Feels nothing like the rest of the city.",
+    who: "Families and long stays wanting space, quiet and easy driving.",
+    eat: "Strong Japanese and Korean scene; pastry shops and mall dining.",
+    watch: "A long way from D1 — 30–45 minutes each way. Only worth it if you're staying a while.",
+    dist: "D7",
   },
 ];
 
@@ -205,7 +251,7 @@ function Toast({ msg }) {
   if (!msg) return null;
   return (
     <div style={{
-      position: "absolute", bottom: 96, left: "50%", transform: "translateX(-50%)",
+      position: "fixed", bottom: 96, left: "50%", transform: "translateX(-50%)",
       background: T.ink, color: "#fff", fontFamily: font.ui, fontSize: 13,
       padding: "10px 16px", borderRadius: 999, whiteSpace: "nowrap", zIndex: 50,
       display: "flex", alignItems: "center", gap: 8,
@@ -218,8 +264,35 @@ function Toast({ msg }) {
 /* ---------- onboarding ---------- */
 function Onboarding({ onDone }) {
   const [step, setStep] = useState(0);
+  const [mode, setMode] = useState("planner");
   const [country, setCountry] = useState("vietnam");
   const [city, setCity] = useState("saigon");
+
+  const ModeCard = ({ id, icon: Icon, title, desc }) => {
+    const on = mode === id;
+    return (
+      <button onClick={() => setMode(id)}
+        className="flex items-start gap-3"
+        style={{
+          padding: "16px 18px", borderRadius: 18, fontFamily: font.ui,
+          background: on ? T.jade : "rgba(255,255,255,0.9)",
+          border: `1px solid ${on ? T.jade : T.line}`, textAlign: "left", width: "100%",
+        }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 14, flexShrink: 0,
+          background: on ? "rgba(255,255,255,0.12)" : T.jadeSoft,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <Icon size={18} color={on ? T.accent : T.jade} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: on ? "#fff" : T.ink }}>{title}</div>
+          <div style={{ fontSize: 12.5, color: on ? "#B9CEC4" : T.sub, marginTop: 3, lineHeight: 1.45 }}>{desc}</div>
+        </div>
+        {on && <Check size={16} color={T.accent} style={{ flexShrink: 0, marginTop: 3 }} />}
+      </button>
+    );
+  };
 
   const steps = [
     {
@@ -236,6 +309,20 @@ function Onboarding({ onDone }) {
             </div>
             <P style={{ color: "#B9CEC4", marginTop: 12 }}>No booking, no fees — just guidance that doesn't go stale.</P>
           </div>
+        </div>
+      ),
+      valid: true,
+    },
+    {
+      eyebrow: "How can we help?",
+      title: "Pick your path",
+      body: (
+        <div className="flex flex-col gap-2">
+          <ModeCard id="planner" icon={Stamp} title="Plan my trip"
+            desc="The full toolkit — visa checklist, document wallet, flight reminders, plus every guide." />
+          <ModeCard id="guide" icon={Compass} title="Just exploring"
+            desc="Skip the planning. Go straight to the travel guide — neighbourhoods, SIM, money, transport." />
+          <P style={{ fontSize: 12, marginTop: 6 }}>You can switch anytime from the settings icon.</P>
         </div>
       ),
       valid: true,
@@ -284,7 +371,19 @@ function Onboarding({ onDone }) {
     },
   ];
 
+  const isLast = step === steps.length - 1 || (step === 1 && mode === "guide");
   const s = steps[step];
+
+  const advance = () => {
+    if (!s.valid) return;
+    if (step === 1 && mode === "guide") {
+      onDone({ mode, country, city });
+      return;
+    }
+    if (step < steps.length - 1) setStep(step + 1);
+    else onDone({ mode, country, city });
+  };
+
   return (
     <div style={{ height: "100%", background: T.sand, display: "flex", flexDirection: "column", padding: "26px 22px 22px", overflowY: "auto" }}>
       <div className="flex items-center justify-between">
@@ -313,17 +412,13 @@ function Onboarding({ onDone }) {
           </button>
         )}
         <button
-          onClick={() => {
-            if (!s.valid) return;
-            if (step < 2) setStep(step + 1);
-            else onDone({ country, city });
-          }}
+          onClick={advance}
           className="flex-1 flex items-center justify-center gap-2"
           style={{
             padding: "15px 0", borderRadius: 18, fontFamily: font.ui, fontSize: 15, fontWeight: 700,
-            background: s.valid ? T.accent : "#E5C9BC", color: "#fff", border: "none",
+            background: s.valid ? T.ink : "#C6CBC7", color: "#fff", border: "none",
           }}>
-          {step < 2 ? "Continue" : "Let's go"} <ArrowRight size={16} />
+          {isLast ? (mode === "guide" ? "Open the guide" : "Let's go") : "Continue"} <ArrowRight size={16} />
         </button>
       </div>
     </div>
@@ -392,7 +487,7 @@ function FlightCard({ flight, setFlight, toast }) {
           <div className="flex gap-2" style={{ marginTop: 12 }}>
             <button onClick={() => toast("Reminder set for 24h before")}
               className="flex-1 flex items-center justify-center gap-2"
-              style={{ background: T.accent, color: "#fff", border: "none", borderRadius: 14, padding: "11px 0", fontFamily: font.ui, fontSize: 13, fontWeight: 700 }}>
+              style={{ background: T.ink, color: "#fff", border: "none", borderRadius: 14, padding: "11px 0", fontFamily: font.ui, fontSize: 13, fontWeight: 700 }}>
               <Bell size={13} /> Remind me
             </button>
             <button onClick={() => toast("We'll ping you on delay or gate change")}
@@ -422,7 +517,7 @@ function FlightCard({ flight, setFlight, toast }) {
             />
             <button
               onClick={() => { if (form.code) { setFlight(form); toast("Flight added"); } }}
-              style={{ background: T.jade, color: "#fff", border: "none", borderRadius: 14, padding: "0 18px", fontFamily: font.ui, fontSize: 13, fontWeight: 700 }}>
+              style={{ background: T.ink, color: "#fff", border: "none", borderRadius: 14, padding: "0 18px", fontFamily: font.ui, fontSize: 13, fontWeight: 700 }}>
               Add
             </button>
           </div>
@@ -442,7 +537,7 @@ function HomeScreen({ trip, go, visaDone, flight, setFlight, toast }) {
     { icon: Zap, label: "Fast track", tab: "visa" },
     { icon: MapPin, label: "Where to stay", tab: "explore" },
   ];
-
+  
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -503,7 +598,7 @@ function VisaScreen({ trip, steps, toggleStep, docs, addDoc, toast }) {
           Government fee: USD 25 single entry · USD 50 multiple. Up to 90 days. Apply at least 2 weeks out.
         </P>
         <button onClick={() => window.open("https://evisa.gov.vn", "_blank")}
-          style={{ marginTop: 12, background: "#F2F5F0", color: T.jade, border: "none", borderRadius: 999, padding: "10px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+          style={{ marginTop: 12, background: T.ink, color: "#fff", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 999, padding: "10px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
           Apply now <ExternalLink size={13} />
         </button>
       </div>
@@ -776,62 +871,833 @@ function ArriveScreen() {
   );
 }
 
-/* ---------- explore ---------- */
-function ExploreScreen({ trip }) {
-  const [openHood, setOpenHood] = useState(null);
+const PLACES = [
+// ---- EAT ----
+{n:"Bánh Mì Huỳnh Hoa",c:["eat"],d:"D1",p:1,pr:"60–80k ₫",t:["Bánh mì","Street food","Queue-worthy"],note:"The most famous stacked bánh mì in Saigon — heavy on meats & pâté. Expect a line.",lat:10.7712,lng:106.6910,a:"26 Lê Thị Riêng, D1"},
+{n:"Phở Hòa / Phở Cao Vân",c:["eat"],d:"D1",p:1,pr:"70–95k ₫",t:["Phở bò","Historic"],note:"Historic phở institution; rich aromatic broth with plenty of fresh herbs.",lat:10.7838,lng:106.7003,a:"District 1"},
+{n:"Bún Chả 145",c:["eat"],d:"D1",p:1,pr:"50–90k ₫",t:["Bún chả","Hanoi-style"],note:"Clean, accessible Hanoi-style grilled pork noodles in the Bùi Viện nightlife strip.",lat:10.7674,lng:106.6935,a:"145 Bùi Viện, D1"},
+{n:"Bếp Mẹ Ỉn",c:["eat"],d:"D1",p:2,pr:"120–250k ₫",t:["Home cooking","Bánh xèo","Michelin Bib"],note:"Michelin Bib Gourmand home cooking tucked in an alley near Ben Thanh; colourful street-art decor.",lat:10.7735,lng:106.6987,a:"136/9 Lê Thánh Tôn, D1",g:"https://maps.google.com/?cid=4999984471408903447"},
+{n:"Đèn Lồng",c:["eat"],d:"D1",p:2,pr:"100–220k ₫",t:["Vietnamese","Claypot","Cosy"],note:"Lantern-lit family-style Vietnamese; excellent claypot pork and morning glory.",lat:10.7671,lng:106.6884,a:"District 1"},
+{n:"Mountain Retreat",c:["eat"],d:"D1",p:2,pr:"150–300k ₫",t:["Vietnamese","Rooftop"],note:"Rustic rooftop near Lê Lợi with great evening ambiance over the central skyline.",lat:10.7719,lng:106.7004,a:"36 Lê Lợi (top floor), D1"},
+{n:"Cục Gạch Quán",c:["eat"],d:"D1",p:3,pr:"300–600k ₫ pp",t:["Countryside","Colonial villa","Fine"],note:"Elevated countryside comfort food in a restored French villa; hosts high-profile guests.",lat:10.7906,lng:106.6890,a:"10 Đặng Tất, D1"},
+{n:"Pizza 4P's — Lê Thánh Tôn",c:["eat"],d:"D1",p:3,pr:"250–500k ₫ pp",t:["Japanese-Italian","Burrata","Book ahead"],note:"Wood-fired pizza with house-made burrata & crab spaghetti. Reservations recommended.",lat:10.7778,lng:106.7031,a:"8/15 Lê Thánh Tôn, D1"},
+{n:"Pizza 4P's — Thảo Điền",c:["eat"],d:"D2",p:3,pr:"300–600k ₫ pp",t:["Japanese-Italian","Garden villa"],note:"Their most atmospheric location — a lush green villa with garden seating.",lat:10.8035,lng:106.7330,a:"Trần Ngọc Diện, Thảo Điền"},
+{n:"The Deck Saigon",c:["eat","drink"],d:"D2",p:3,pr:"500k–1.2M ₫ pp",t:["Riverfront","Pan-Asian","Sunset"],note:"Right on the Saigon River — premiere sunset cocktails, high-end wine list, contemporary fusion.",lat:10.8106,lng:106.7256,a:"38 Nguyễn Ư Dĩ, Thảo Điền",g:"https://maps.google.com/?cid=13685370239740153323"},
+{n:"Quán Ụt Ụt",c:["eat"],d:"D2",p:2,pr:"200–450k ₫",t:["American BBQ","Craft beer"],note:"Craft American BBQ and smoked ribs with a casual river-adjacent vibe.",lat:10.7995,lng:106.7360,a:"Thảo Điền, D2"},
+{n:"Phở Lệ",c:["eat"],d:"D3",p:1,pr:"80–110k ₫",t:["Southern phở","Institution"],note:"Richer, slightly sweeter southern broth with generous tendon & meatball portions.",lat:10.7546,lng:106.6675,a:"Nguyễn Trãi, D3/D5 boundary"},
+{n:"Bánh Xèo 46A",c:["eat"],d:"D3",p:1,pr:"90–160k ₫",t:["Bánh xèo","Bourdain","Wood-fire"],note:"Iconic outdoor wood-fired crispy pancakes, famously featured by Anthony Bourdain.",lat:10.7906,lng:106.6893,a:"46A Đinh Công Tráng, D3",g:"https://maps.google.com/?cid=5260223407053297133"},
+{n:"Ốc Oanh",c:["eat"],d:"D4",p:1,pr:"100–250k ₫ /dish",t:["Seafood","Snails","Street strip"],note:"Vĩnh Khánh street-food energy. Order the salted-egg mud-creepers and garlic butter snails.",lat:10.7570,lng:106.6980,a:"Vĩnh Khánh St, D4"},
+{n:"Cơm Tấm An Dương Vương",c:["eat"],d:"D5",p:1,pr:"50–90k ₫",t:["Cơm tấm","Breakfast"],note:"Quintessential broken rice with caramelised charcoal-grilled pork chop and egg loaf.",lat:10.7565,lng:106.6710,a:"An Dương Vương, D5"},
+// ---- DRINK ----
+{n:"Stir",c:["drink"],d:"D1",p:2,pr:"200–380k ₫",t:["Asia's 100 Best","Local flavours"],note:"Hidden up a narrow staircase opposite Ben Thanh; truffle & phở-infused cocktail twists.",lat:10.7717,lng:106.6969,a:"136 Lê Thánh Tôn, D1"},
+{n:"Snuffbox",c:["drink"],d:"D1",p:2,pr:"200–450k ₫",t:["Speakeasy","Live jazz","1920s"],note:"Velvet-seated prohibition lounge inside a vintage apartment building; jazz & R&B nights.",lat:10.7712,lng:106.7040,a:"14 Tôn Thất Đạm, D1",g:"https://maps.google.com/?cid=16768234520235675945"},
+{n:"Drinking & Healing",c:["drink"],d:"D1",p:2,pr:"220–400k ₫",t:["Industrial","Date night"],note:"Brick-and-beam craft cocktails above a historic building near Bitexco. Excellent mixologists.",lat:10.7708,lng:106.7043,a:"25 Hồ Tùng Mậu, D1"},
+{n:"The Iron Bank",c:["drink"],d:"D1",p:1,pr:"150–300k ₫",t:["Speakeasy","Whiskey","Medieval"],note:"Cosy medieval-tavern speakeasy hidden in an alley; approachable prices, whiskey-forward.",lat:10.7700,lng:106.7037,a:"47 Tôn Thất Đạm, D1"},
+{n:"Layla — Eatery & Bar",c:["drink","eat"],d:"D1",p:2,pr:"180–350k ₫",t:["Tapas","Garden bar"],note:"Energetic lounge in a leafy French-colonial building; big garden bar, great tapas.",lat:10.7757,lng:106.7042,a:"63 Đông Du, D1"},
+{n:"Social Club Rooftop",c:["drink"],d:"D1",p:3,pr:"250–500k ₫",t:["Rooftop","Sunset","Upscale"],note:"24th-floor hotel rooftop with panoramic D1 views, infinity pool glamour and house music.",lat:10.7838,lng:106.6935,a:"Hôtel des Arts, 24F, D1",g:"https://maps.google.com/?cid=14342053608653436246"},
+{n:"Zion Sky Lounge",c:["drink"],d:"D1",p:3,pr:"250–600k ₫",t:["Sky lounge","DJs","High energy"],note:"Skyline sunsets that turn into a vibrant night scene with live DJs and bottle service.",lat:10.7702,lng:106.7027,a:"87A Hàm Nghi, 14F, D1"},
+{n:"Saigon Saigon Rooftop",c:["drink"],d:"D1",p:2,pr:"200–450k ₫",t:["Historic","Live music","Rooftop"],note:"Open since 1959 — wartime correspondents' hangout with live Latin/jazz and Opera House views.",lat:10.7765,lng:106.7034,a:"Caravelle Hotel, 9F, D1"},
+{n:"Pasteur Street Brewing",c:["drink"],d:"D1",p:1,pr:"80–180k ₫ /pint",t:["Craft beer","Jasmine IPA","Alley"],note:"Birthplace of Vietnam's craft beer movement. Try the Jasmine IPA or Dragonfruit Sour.",lat:10.7746,lng:106.6996,a:"144 Pasteur, D1"},
+{n:"East West Brewing",c:["drink","eat"],d:"D1",p:1,pr:"90–220k ₫ /pint",t:["Brewpub","Beer flights"],note:"Open-concept brewery with visible tanks, fantastic flights and American-fusion pub food.",lat:10.7719,lng:106.6953,a:"181–185 Lý Tự Trọng, D1"},
+{n:"Rogue Saigon",c:["drink"],d:"D1",p:1,pr:"80–170k ₫",t:["Rooftop","Craft beer","Graffiti"],note:"Raw concrete rooftop over three floors with rotating guest taps and broad city views.",lat:10.7697,lng:106.7043,a:"13 Pasteur, D1"},
+{n:"Rabbit Hole",c:["drink"],d:"D1",p:3,pr:"220–450k ₫",t:["Speakeasy","Jazz","Leather & moody"],note:"Underground lounge with moody lighting, classic leather seats and expertly built cocktails.",lat:10.7730,lng:106.6975,a:"District 1"},
+{n:"Summer Experiment",c:["drink"],d:"D1",p:3,pr:"250–450k ₫",t:["Mixology","Tropical","Playful"],note:"Experimental cocktails with local tropical fruits, infused botanicals and playful serves.",lat:10.7900,lng:106.6950,a:"District 1"},
+{n:"BiaCraft Artisan Beers",c:["drink"],d:"D2",p:1,pr:"70–180k ₫",t:["Beer garden","BBQ","Casual"],note:"Huge Vietnamese craft tap list with hilarious translated beer names and BBQ snacks.",lat:10.8018,lng:106.7308,a:"90 Xuân Thủy, Thảo Điền"},
+{n:"Tủ Bar",c:["drink"],d:"BT",p:2,pr:"200–380k ₫",t:["Wardrobe door","12 seats","Bespoke"],note:"Enter through a hidden wardrobe into an ultra-intimate counter bar. Drinks tailored to your mood.",lat:10.7925,lng:106.7075,a:"160 Ngô Tất Tố, Bình Thạnh"},
+{n:"Indika Saigon",c:["drink"],d:"D3",p:1,pr:"50–120k ₫",t:["Courtyard","Reggae/dub","Pizza"],note:"Crumbling-villa courtyard with craft brews, wood-fired pizza and acoustic/DJ sessions.",lat:10.7930,lng:106.6960,a:"43 Nguyễn Văn Giai, D1/D3"},
+// ---- CAFE ----
+{n:"The Cafe Apartment",c:["cafe","shop"],d:"D1",p:1,pr:"45–90k ₫",t:["9 floors","Vintage","Landmark"],note:"1960s residential block turned nine floors of boutique cafés and designer stores over Nguyễn Huệ.",lat:10.7737,lng:106.7040,a:"42 Nguyễn Huệ, D1"},
+{n:"Cộng Cà Phê",c:["cafe"],d:"D1",p:1,pr:"40–75k ₫",t:["Coconut coffee","Retro"],note:"Communist-era nostalgia aesthetic; famous frozen coconut coffee (cà phê cốt dừa).",lat:10.7770,lng:106.7030,a:"Đồng Khởi / Lý Tự Trọng, D1"},
+{n:"The Workshop Coffee",c:["cafe"],d:"D1",p:1,pr:"80–160k ₫",t:["Third-wave","Pour-over","Laptop-friendly"],note:"Lofty industrial attic near the Opera House; single-origin pour-overs and a great workspace.",lat:10.7740,lng:106.7050,a:"27 Ngô Đức Kế, D1"},
+{n:"Cà Phê Đỗ Phủ",c:["cafe"],d:"D3",p:1,pr:"40–80k ₫",t:["Secret bunker","Wartime","Heritage"],note:"Secret Viet Cong bunker under a traditional eatery — trapdoors and authentic artifacts included.",lat:10.7920,lng:106.6900,a:"113A Đặng Dung, D3 area"},
+{n:"Okkio Caffe",c:["cafe"],d:"D3",p:1,pr:"65–120k ₫",t:["Espresso","Art-deco"],note:"Warm mid-century art-deco rooms paired with serious specialty brews.",lat:10.7830,lng:106.6900,a:"Lê Văn Sỹ / NTMK, D3"},
+// ---- SHOP ----
+{n:"Levents",c:["shop"],d:"D1",p:2,pr:"350k–1.2M ₫",t:["Streetwear","Oversized tees"],note:"High-quality local streetwear — oversized graphics, hoodies and minimalist loungewear.",lat:10.7660,lng:106.6870,a:"Nguyễn Trãi, D1"},
+{n:"DirtyCoins",c:["shop"],d:"D1",p:2,pr:"350k–1.5M ₫",t:["Streetwear","Dragon motifs","Souvenir-able"],note:"Vietnamese motifs (dragons, lacquer patterns) turned into wearable streetwear.",lat:10.7665,lng:106.6880,a:"Vincom / Nguyễn Trãi, D1"},
+{n:"LSOUL",c:["shop"],d:"D1",p:2,pr:"450k–1.8M ₫",t:["Y2K","K-pop stage style"],note:"Bold trendy silhouettes, cropped jackets and statement womenswear.",lat:10.7650,lng:106.6850,a:"257B Nguyễn Trãi, D1"},
+{n:"Nosbyn",c:["shop"],d:"D1",p:2,pr:"500k–1.5M ₫",t:["Minimalist","Womenswear"],note:"Clean timeless cuts and quality wardrobe essentials designed to last.",lat:10.7690,lng:106.6920,a:"28 Nguyễn Trãi, D1"},
+{n:"Parahub",c:["shop"],d:"D1",p:2,pr:"200k–1.2M ₫",t:["Concept store","Skate"],note:"Concept-store spin-off of Paradise4saigon — streetwear, skate decks and accessories in Đa Kao.",lat:10.7915,lng:106.6945,a:"8A Trần Doãn Khanh, Đa Kao, D1",ax:1},
+{n:"Metiseko",c:["shop"],d:"D1",p:3,pr:"990k–3.2M ₫",t:["Eco silk","Sustainable","Gifts"],note:"Sustainable silk & organic cotton with prints inspired by Vietnamese flora and heritage.",lat:10.7760,lng:106.7030,a:"Đồng Khởi area, D1"},
+{n:"Ben Thanh Market",c:["shop"],d:"D1",p:1,pr:"Haggle it",t:["Souvenirs","Handicrafts","Landmark"],note:"Iconic market for lacquerware, coffee beans and trinkets. Bargaining required.",lat:10.7725,lng:106.6980,a:"Lê Lợi, D1"},
+{n:"Fancì Club",c:["shop"],d:"D2",p:3,pr:"890k–3.5M ₫",t:["Y2K couture","Worn by Bella Hadid"],note:"Internationally acclaimed designer — sheer fabrics and corseted cuts worn by global celebrities.",lat:10.8130,lng:106.7290,a:"186 Nguyễn Văn Hưởng, D2"},
+{n:"Bunny Hill Concept",c:["shop"],d:"D2",p:2,pr:"400k–2M ₫",t:["Indie designers","Rotating"],note:"Collective store showcasing rotating collections from emerging Vietnamese brands.",lat:10.8050,lng:106.7330,a:"Thảo Điền, D2"},
+{n:"OHQUAO — Thảo Điền",c:["shop"],d:"D2",p:1,pr:"50–500k ₫",t:["Local art","Stationery","Gifts"],note:"Dedicated to local illustrators — unique postcards, art prints, stickers and gifts.",lat:10.8030,lng:106.7320,a:"Living Etc., 19 Đường số 38, Thảo Điền"},
+{n:"OHQUAO — The Local Edit",c:["shop"],d:"D3",p:1,pr:"50–500k ₫",t:["Local art","Travel gifts"],note:"D3 branch of the creative design store; local art pieces, prints and thoughtful gifts.",lat:10.7830,lng:106.6930,a:"58/12 Phạm Ngọc Thạch, D3",g:"https://maps.google.com/?cid=17159458610705563493"},
+{n:"In The Mood Saïgon",c:["shop"],d:"D2",p:2,pr:"200k–1.5M ₫",t:["Ceramics","Home decor"],note:"Local ceramics, mirrors, lighting and home accents celebrating Vietnamese craftsmanship.",lat:10.80541,lng:106.74084,a:"32 Trần Ngọc Diện, D2",g:"https://maps.google.com/?cid=1975468894066877703"},
+{n:"Tân Định Market",c:["shop"],d:"D3",p:1,pr:"Budget–mid",t:["Fabric","Pink Church","Tailoring"],note:"Opposite the famous Pink Church — excellent for tailor fabric and street fashion.",lat:10.7900,lng:106.6905,a:"Hai Bà Trưng, D3"},
+// ---- BRANCH CARDS (multi-location spots) ----
+{n:"Paradise4saigon — Flagship",c:["shop"],d:"D1",p:2,pr:"300k–1.5M ₫",t:["Local brand","Streetwear","Flagship"],note:"One of Vietnam's premier local clothing brands — funky threads with a deeply Vietnamese design language. Hit this first, then Parahub.",lat:10.7723,lng:106.7020,a:"42 Tôn Thất Thiệp, D1",g:"https://maps.google.com/?cid=8426048901243796775"},
+{n:"111 Concept Store — Vina Design x Đầu Hàng",c:["shop"],d:"D1",p:1,pr:"50–400k ₫",t:["Gifts","Stationery","Local art"],note:"Quirky collab gift shop — local designers' stickers, postcards and handmade bits at 111 Tôn Thất Đạm.",lat:10.7700,lng:106.7038,a:"111 Tôn Thất Đạm, D1",ax:1},
+{n:"Pizza 4P's — Bến Thành",c:["eat"],d:"D1",p:3,pr:"250–500k ₫ pp",t:["Japanese-Italian","Burrata","Book ahead"],note:"The Bến Thành branch — same wood-fired pizza and house burrata, steps from the market.",lat:10.7727,lng:106.6960,a:"8 Thủ Khoa Huân, D1",ax:1},
+{n:"Pizza 4P's — Hai Bà Trưng",c:["eat"],d:"D3",p:3,pr:"250–500k ₫ pp",t:["Japanese-Italian","Burrata"],note:"D3's own 4P's on Hai Bà Trưng — usually an easier booking than the D1 originals.",lat:10.7855,lng:106.6905,a:"151B Hai Bà Trưng, D3",ax:1},
+{n:"Pizza 4P's — Saigon Pearl",c:["eat"],d:"BT",p:3,pr:"250–500k ₫ pp",t:["Japanese-Italian","Riverside towers"],note:"Bình Thạnh branch at Saigon Pearl — handy after a Landmark 81 or Vinhomes wander.",lat:10.7893,lng:106.7180,a:"92 Nguyễn Hữu Cảnh, Bình Thạnh",ax:1},
+{n:"Pizza 4P's — Phú Mỹ Hưng",c:["eat"],d:"D7",p:3,pr:"250–500k ₫ pp",t:["Japanese-Italian","Burrata"],note:"The D7 outpost in Cobi Tower II — brings the burrata to Phú Mỹ Hưng.",lat:10.7290,lng:106.7190,a:"Cobi Tower II, Phú Mỹ Hưng, D7",ax:1},
+{n:"Pizza 4P's — Vincom 3/2",c:["eat"],d:"D5",p:3,pr:"250–500k ₫ pp",t:["Japanese-Italian","Westside"],note:"Westside 4P's inside Vincom Plaza 3/2 — the D10 catchment's branch.",lat:10.7760,lng:106.6820,a:"3C Đường 3 Tháng 2, D10",ax:1},
+// ---- FROM MARK'S SAVED LISTS (auto-imported) ----
+{n:"Quán Cơm Tấm 47",c:["eat"],d:"D7",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Locals love this com tam place.",lat:10.73624,lng:106.7013,a:"",g:"https://maps.google.com/?cid=14058412733638983916",ax:1},
+{n:"Nhàn",c:["eat"],d:"D4",p:2,pr:"100–250k ₫",t:["Brunch","Local eats"],note:"Brunch place.",lat:10.75916,lng:106.68939,a:"",g:"https://maps.google.com/?cid=5696042662644789705",ax:1},
+{n:"NHAU NHAU",c:["eat","drink"],d:"D1",p:2,pr:"150–350k ₫",t:["Cocktails","Modern Viet"],note:"Cocktail bar with decent looking contemporary Vietnamese food — drinking-food ('nhậu') done modern.",lat:10.7705,lng:106.70959,a:"",g:"https://maps.google.com/?cid=2280245820929513815",ax:1},
+{n:"Bún Thịt Nướng Chả Giò - Nguyễn Trung Trực",c:["eat"],d:"D1",p:1,pr:"40–85k ₫",t:["Street food","Noodles"],note:"Good looking bun thit nuong.",lat:10.77352,lng:106.69959,a:"Nguyễn Trung Trực",g:"https://maps.google.com/?cid=2770198550638406281",ax:1},
+{n:"Bar Rơm",c:["eat","drink"],d:"X",p:2,pr:"200–400k ₫",t:["Wine","Natural wine","Modern Viet"],note:"Modern Vietnamese eatery. Really cool vibes. Natural wine to wash it down.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8563311440822007994",ax:1},
+{n:"Bánh mì - Xôi mặn Hắc Ngầu",c:["eat"],d:"X",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Crazy good looking savour and sweet sticky rice place.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6534664457981469078",ax:1},
+{n:"Ralf's Artisan Gelato",c:["cafe"],d:"D2",p:1,pr:"60–120k ₫",t:["Gelato","Sweet"],note:"Great gelato in Thảo Điền — small-batch scoops, rotating flavours.",lat:10.803,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=1567300857787824727",ax:1},
+{n:"234 Lý Tự Trọng",c:["eat"],d:"D1",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Jess recommended com tam.",lat:10.77232,lng:106.69454,a:"Lý Tự Trọng",g:"https://maps.google.com/?cid=12799982474753548087",ax:1},
+{n:"Pasteloa",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Brazilian"],note:"Brazilian restaurant.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8812172460029438905",ax:1},
+{n:"Yeshi Taiwanese Kitchen",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Taiwanese"],note:"Taiwanese to try with mica.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7720365190874347052",ax:1},
+{n:"Cơm tấm Đề Thám",c:["eat"],d:"D1",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"ComTam place looks juicy.",lat:10.774,lng:106.7,a:"Đề Thám",g:"https://maps.google.com/?cid=745082976618157529",ax:1},
+{n:"GrillDog Burger",c:["eat"],d:"D5",p:2,pr:"100–220k ₫",t:["Burgers","Local eats"],note:"Interesting looking burger joint.",lat:10.74806,lng:106.67794,a:"",g:"https://maps.google.com/?cid=2984581791081380578",ax:1},
+{n:"An's Saigon",c:["eat"],d:"D2",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Hana says I must try by myself.",lat:10.8035,lng:106.733,a:"",g:"https://maps.google.com/?cid=5979597170038440843",ax:1},
+{n:"Mila Mushroom Pizza - Take Away",c:["eat"],d:"D5",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Looks like decent take no frills pizza. Check zalo delivery.",lat:10.82125,lng:106.64987,a:"",g:"https://maps.google.com/?cid=8242295852744486542",ax:1},
+{n:"MARIANNE'S PIZZA",c:["eat"],d:"X",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Looks like a cute wood fired pizzeria.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7750303343775827253",ax:1},
+{n:"Banana Mama Rooftop Bar & Kitchen Saigon",c:["eat","drink"],d:"D1",p:2,pr:"90–200k ₫",t:["Rooftop","Near Bùi Viện"],note:"Cool chill rooftop near Bùi Viện — close to the chaos without being in it.",lat:10.774,lng:106.7,a:"near Bùi Viện, D1",g:"https://maps.google.com/?cid=13006624483278084179",ax:1},
+{n:"Xèng Quán - Chi nhánh Huỳnh Mẫn Đạt",c:["eat","drink"],d:"D5",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Bia Hoi late night eating spot.",lat:10.757,lng:106.665,a:"Huỳnh Mẫn Đạt",g:"https://maps.google.com/?cid=7825952031767799886",ax:1},
+{n:"Bánh mì Bùi Thị Xuân",c:["eat"],d:"D1",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Cold cuts banh mi.",lat:10.76989,lng:106.68826,a:"Bùi Thị Xuân",g:"https://maps.google.com/?cid=5108558391170420286",ax:1},
+{n:"Lulu - Bar & Eatery",c:["eat","drink"],d:"X",p:2,pr:"150–300k ₫",t:["Cocktails","Cuban"],note:"Cuban cocktail bar and eatery — rum, snacks and Latin energy.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=14390044012207103371",ax:1},
+{n:"Thịnh Ký",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Big wok situations.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=18027088925141950243",ax:1},
+{n:"Nhoàn - Nhà hàng chay / Cafe",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Vegan","Vegetarian"],note:"Vegan veg.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=13258900925491615437",ax:1},
+{n:"COCOCake Minh Khai",c:["cafe"],d:"D3",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Vietnamese desserts.",lat:10.7588,lng:106.68974,a:"Minh Khai",g:"https://maps.google.com/?cid=2548787576060349851",ax:1},
+{n:"Bánh Cuốn Tây Hồ 127",c:["eat"],d:"X",p:1,pr:"35–70k ₫",t:["Bánh cuốn","Street food"],note:"Nina recommended.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7151154922053425995",ax:1},
+{n:"Ivoire Pastry Boutique",c:["cafe"],d:"D7",p:1,pr:"45–95k ₫",t:["Pastry","Café"],note:"Beautiful little pastry shop.",lat:10.72175,lng:106.67862,a:"",g:"https://maps.google.com/?cid=3207190988256656467",ax:1},
+{n:"Gom Sai Gon - Cafe & Pottery",c:["cafe"],d:"D1",p:1,pr:"50–95k ₫",t:["Café","Ceramics"],note:"Gốm in the Cafe Apartment — coffee among the ceramics in the famous 42 Nguyễn Huệ building.",lat:10.774,lng:106.7,a:"42 Nguyễn Huệ, D1",g:"https://maps.google.com/?cid=3740469176760747868",ax:1},
+{n:"May Coffee",c:["cafe","eat"],d:"X",p:2,pr:"100–250k ₫",t:["Café","Coffee"],note:"Cute looking cafe and broth noods.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=1853454795613979139",ax:1},
+{n:"PIRIPARAPO YATAI",c:["eat"],d:"X",p:3,pr:"300–600k ₫ pp",t:["Izakaya","Japanese"],note:"Cool looking Izakaya.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=10067324727010868288",ax:1},
+{n:"INCH KA",c:["eat"],d:"X",p:2,pr:"120–280k ₫",t:["Tacos","Mexican"],note:"New kebab and taco place?",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=14243166469181584643",ax:1},
+{n:"Old Sister Broken Rice",c:["eat"],d:"D5",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Juicy com tam.",lat:10.80925,lng:106.65106,a:"",g:"https://maps.google.com/?cid=11237461113876915747",ax:1},
+{n:"Oishi Town",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Japanese"],note:"Cute tucked away Japanese cafes,florist, and homewares.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9868915964533455014",ax:1},
+{n:"NÚC Kitchen & Bar",c:["eat","drink"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Interesting contemporary Vietnamese.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7831379727204595265",ax:1},
+{n:"Papaya Papa – Rooftop Restaurant, Bar & Club Ho Chi Minh City",c:["eat","drink"],d:"D5",p:3,pr:"200–450k ₫",t:["Rooftop","Club"],note:"Trendy rooftop bar-club hybrid — dress up a bit, stay for the view.",lat:10.74849,lng:106.67741,a:"",g:"https://maps.google.com/?cid=15677752460633080088",ax:1},
+{n:"Fortune Ivy",c:["eat"],d:"D5",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Cute cosy cool looking restaurant.",lat:10.80398,lng:106.63957,a:"",g:"https://maps.google.com/?cid=14210500984814210724",ax:1},
+{n:"SOMA @ Green Box",c:["eat"],d:"D2",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.80466,lng:106.73203,a:"",g:"https://maps.google.com/?cid=4447626482974150412",ax:1},
+{n:"Gringo Tacos y Cantina",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Tacos","Local eats"],note:"Looks decent for Mexican.",lat:10.77402,lng:106.69698,a:"",g:"https://maps.google.com/?cid=5279697462956372541",ax:1},
+{n:"BOCĀO Basque Izakaya",c:["eat"],d:"X",p:3,pr:"300–600k ₫ pp",t:["Izakaya","Japanese"],note:"Nice sunset happy hour spot.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=13770959111837596913",ax:1},
+{n:"Bánh Canh Cua Gánh Thuý",c:["eat"],d:"X",p:1,pr:"50–110k ₫",t:["Crab","Bánh canh"],note:"Delicious crab noods.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4608135949855882998",ax:1},
+{n:"Tường By Double T - Smash Burger",c:["eat"],d:"D5",p:2,pr:"100–220k ₫",t:["Burgers","Local eats"],note:"Smash burger super tasty looking and cheap?!",lat:10.74768,lng:106.67685,a:"",g:"https://maps.google.com/?cid=12750150317996739476",ax:1},
+{n:"Vườn Thiên Giới",c:["cafe"],d:"X",p:1,pr:"50–100k ₫",t:["Destination cafe","Jungle"],note:"Insane Avatar-like cafe — a jungle fever-dream of bridges, mist and waterfalls. Go for the spectacle.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8142218349660227469",ax:1},
+{n:"BahThai",c:["eat"],d:"D5",p:2,pr:"100–250k ₫",t:["Local eats","Thai"],note:"Great thai, similar vibes to modern bkk styles.",lat:10.74826,lng:106.67739,a:"",g:"https://maps.google.com/?cid=15242755945206672710",ax:1},
+{n:"Fellini",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Italian"],note:"Hidden Italian.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=16903979386620807856",ax:1},
+{n:"CCCP Saigon Restaurant",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Russian"],note:"Russian restaurant in Saigon.",lat:10.79195,lng:106.70051,a:"",g:"https://maps.google.com/?cid=13465630403196041792",ax:1},
+{n:"Dong Pho Restaurant",c:["eat"],d:"D3",p:1,pr:"45–90k ₫",t:["Phở","Local eats"],note:"Hana’s cousin place.",lat:10.77636,lng:106.68747,a:"",g:"https://maps.google.com/?cid=9193568284814227265",ax:1},
+{n:"Margherí pizza Phú Mỹ Hưng",c:["eat"],d:"D7",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Solid pizza option in D7.",lat:10.733,lng:106.707,a:"",g:"https://maps.google.com/?cid=4892671101189758311",ax:1},
+{n:"Phở Hương Bình",c:["eat"],d:"D3",p:1,pr:"45–90k ₫",t:["Phở","Local eats"],note:"Phở house — one bowl, done right.",lat:10.78701,lng:106.69114,a:"",g:"https://maps.google.com/?cid=9576693014418456529",ax:1},
+{n:"FEN Izakaya - The best modern izakaya Japanese restaurant in Sài Gòn",c:["eat"],d:"D5",p:3,pr:"300–600k ₫ pp",t:["Izakaya","Japanese"],note:"Roast duck Japanese style.",lat:10.74858,lng:106.67654,a:"",g:"https://maps.google.com/?cid=16752136924784187608",ax:1},
+{n:"Táo Tào - Tiệm Chè Người Hoa - Ký Con",c:["cafe"],d:"D1",p:1,pr:"45–95k ₫",t:["Chè","Dessert"],note:"Vietnamese sweet-soup and dessert counter.",lat:10.774,lng:106.7,a:"Ký Con",g:"https://maps.google.com/?cid=14268960838029344545",ax:1},
+{n:"Yukikitchen",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Vegetarian","Local eats"],note:"From the saved eats list — tap through for photos and menu.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=16077425833353734000",ax:1},
+{n:"Delab Thảo Điền",c:["cafe"],d:"D2",p:1,pr:"55–110k ₫",t:["Café","Specialty coffee","Minimal"],note:"Specialty coffee lab in Thảo Điền — serious brews, minimal room.",lat:10.8035,lng:106.7325,a:"Thảo Điền",g:"https://maps.google.com/?cid=13520570623300524578",ax:1},
+{n:"Ran Bien 8",c:["eat"],d:"D2",p:2,pr:"200–450k ₫ pp",t:["Seafood","Local eats"],note:"Good crispy seafood fried rice.",lat:10.79049,lng:106.73048,a:"",g:"https://maps.google.com/?cid=12621125234423677689",ax:1},
+{n:"Ran Bien 5 Restaurant",c:["eat"],d:"D3",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Excellent fried rice. Ask for extra crispy.",lat:10.78679,lng:106.68653,a:"",g:"https://maps.google.com/?cid=3277350293307225002",ax:1},
+{n:"Quán Thuý 94 - Miến Cua",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Crab","Local eats"],note:"Soft shell crab noodles.",lat:10.79016,lng:106.69784,a:"",g:"https://maps.google.com/?cid=2610750245937094978",ax:1},
+{n:"Minh Món Huế – Hue Rustic Flavors Restaurant",c:["eat"],d:"D7",p:2,pr:"100–250k ₫",t:["Local eats","Huế-style"],note:"Hue style food.",lat:10.74077,lng:106.69809,a:"",g:"https://maps.google.com/?cid=1522197410416328702",ax:1},
+{n:"Cơm tấm 40A",c:["eat"],d:"D2",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Cơm tấm — smoky grilled pork chop over broken rice.",lat:10.80511,lng:106.73143,a:"",g:"https://maps.google.com/?cid=15898568832337787616",ax:1},
+{n:"Matte Matcha & Teabar",c:["cafe","drink"],d:"D1",p:1,pr:"60–120k ₫",t:["Matcha","Teabar"],note:"Matcha — whisked-to-order bowls and matcha lattes in central D1.",lat:10.78858,lng:106.6978,a:"",g:"https://maps.google.com/?cid=4573351237350610271",ax:1},
+{n:"Zeroism Vegan - Café & Sourdough Bakery",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Vegan","Vegetarian","Bakery"],note:"Really great Vietnamese vegan.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4030122025937758201",ax:1},
+{n:"Nấm - Vegetarian Bistro",c:["eat"],d:"X",p:1,pr:"60–150k ₫",t:["Vegetarian","Local eats"],note:"Meat-free kitchen from the saved list.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3583090339714103361",ax:1},
+{n:"A Xỉu - Quán Ăn Ngon",c:["eat"],d:"D2",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Chicken rice.",lat:10.78256,lng:106.72062,a:"",g:"https://maps.google.com/?cid=4972183245674149675",ax:1},
+{n:"Nam Mê Saigon",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Viet recomendation.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=2516522878914147543",ax:1},
+{n:"Extraordinary (cafe/wine bar)",c:["cafe","drink"],d:"X",p:2,pr:"70–250k ₫",t:["Wine","Café"],note:"Cafe wine bar thingy — coffee until it becomes wine o'clock.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4216345444346967087",ax:1},
+{n:"Cơm Tấm Dì Út",c:["eat"],d:"D4",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Com tam.",lat:10.74992,lng:106.70061,a:"",g:"https://maps.google.com/?cid=16646326524940592782",ax:1},
+{n:"2cms Wine Bar & Bottle Shop",c:["eat","drink"],d:"X",p:2,pr:"150–300k ₫/glass",t:["Wine","Bottle shop"],note:"Cute wine bar and bottle shop — drink in or take a bottle home.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=636379810269447986",ax:1},
+{n:"Apero Bar & Bistro",c:["eat","drink"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Italian"],note:"Fancy Italian.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=15395378955149592825",ax:1},
+{n:"Today With You (Pasta & Pizza Restaurant)",c:["eat"],d:"X",p:2,pr:"150–350k ₫",t:["Pizza","Italian"],note:"Pizzeria from the saved eats list.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6889643416074513300",ax:1},
+{n:"Can Tin Bakery",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Bakery","Café"],note:"New bakery.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4978163541701777151",ax:1},
+{n:"SANSUNG korean restaurant bbq(산성식육점) Quán thịt nướng Hàn Quốc",c:["eat"],d:"X",p:2,pr:"200–400k ₫ pp",t:["BBQ","Group dinner"],note:"Recommended by Stella.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7272769918675096791",ax:1},
+{n:"Hong Malatang Canh Cay Tô",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Malatang"],note:"Stella’s recommendation.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9805493183197228649",ax:1},
+{n:"Mille Mille - Boutique Store - Trần Cao Vân",c:["cafe"],d:"D3",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Giant croissant!",lat:10.78,lng:106.685,a:"Trần Cao Vân",g:"https://maps.google.com/?cid=17053267431084915397",ax:1},
+{n:"Bánh Mì Sáu Minh",c:["eat"],d:"D3",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Cold cuts banh mi.",lat:10.78858,lng:106.67987,a:"",g:"https://maps.google.com/?cid=17644669954830422891",ax:1},
+{n:"Cộng coffee - Xuan Thuy Branch",c:["cafe"],d:"D2",p:1,pr:"45–85k ₫",t:["Coconut coffee","Retro"],note:"Great coconut coffee — the Thảo Điền branch of the retro-militaria chain.",lat:10.8021,lng:106.7331,a:"Xuân Thủy, Thảo Điền",g:"https://maps.google.com/?cid=10298035646235820475",ax:1},
+{n:"Roast & Smoke Thao Dien",c:["eat"],d:"D2",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=3495729502540699938",ax:1},
+{n:"WKND",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Brunch","Local eats"],note:"Great little brunch spot.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6041218171093882638",ax:1},
+{n:"Bánh Canh Ghẹ Muối Ớt Xanh",c:["eat"],d:"D3",p:1,pr:"50–110k ₫",t:["Crab","Bánh canh"],note:"Recommend by Thao. Excellent crab noodle broth!!",lat:10.76713,lng:106.66739,a:"",g:"https://maps.google.com/?cid=4320199166363319725",ax:1},
+{n:"Bún Riêu Cô Hương Béo Hà Nội - Quận 10",c:["eat"],d:"D5",p:1,pr:"40–80k ₫",t:["Street food","Bún riêu"],note:"Bun rieu recommended by Thao.",lat:10.757,lng:106.665,a:"",g:"https://maps.google.com/?cid=4342176130151608145",ax:1},
+{n:"Hủ tiếu nam vang Tân Thành Đạt",c:["eat"],d:"X",p:1,pr:"40–85k ₫",t:["Hủ tiếu","Street food"],note:"Hu you recommended by Thao.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=10705515232349280220",ax:1},
+{n:"Bun Mam Co Ba",c:["eat"],d:"X",p:1,pr:"40–85k ₫",t:["Street food","Noodles"],note:"Shrimp paste noodle soup recommended by Thao.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8006750506828634943",ax:1},
+{n:"Garden Kisses",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Great Scandinavian pastries, chill vibes. Lemon honey espresso tonic was pretty good too!",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=5774625269850648863",ax:1},
+{n:"Chuối Nếp Nướng",c:["cafe"],d:"D4",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Grilled sticky rice banana dessert.",lat:10.76257,lng:106.68804,a:"",g:"https://maps.google.com/?cid=15748377015755951490",ax:1},
+{n:"Chuối nếp nướng Võ Văn Tần",c:["eat"],d:"D3",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Grilled sticky rice with banana.",lat:10.77027,lng:106.6844,a:"Võ Văn Tần",g:"https://maps.google.com/?cid=10456983291937633608",ax:1},
+{n:"BIN'S HOUSE COFFEE",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Trang’s cafe recommendation.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7849465212712169049",ax:1},
+{n:"Nhà Tú - Việt Nam Restaurant",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Vietnamese cuisi e.",lat:10.77514,lng:106.68954,a:"",g:"https://maps.google.com/?cid=16599986691486725031",ax:1},
+{n:"La Scène - Bistro Cafe ⬩ Listening Bar",c:["cafe","drink"],d:"X",p:2,pr:"80–200k ₫",t:["Café","Italian"],note:"Bistro pasta international foods.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8758200484140829323",ax:1},
+{n:"The Hummingbird Café & Roastery",c:["cafe"],d:"D1",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cute cafe with excellent coffee.",lat:10.76683,lng:106.7026,a:"",g:"https://maps.google.com/?cid=6784318869373534947",ax:1},
+{n:"Bún Bò Huế Mỡ Nổi Cô Như",c:["eat"],d:"D4",p:1,pr:"45–90k ₫",t:["Phở","Local eats"],note:"Michelin guided pho.",lat:10.74865,lng:106.7116,a:"",g:"https://maps.google.com/?cid=7625849282498582958",ax:1},
+{n:"Trap Space",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cosy cafe with a river view.",lat:10.74736,lng:106.67698,a:"",g:"https://maps.google.com/?cid=9310037484767216969",ax:1},
+{n:"San May Cafe & Vegetarian Restaurant",c:["cafe"],d:"D1",p:1,pr:"45–95k ₫",t:["Vegetarian","Café"],note:"Meat-free kitchen from the saved list.",lat:10.7878,lng:106.69712,a:"",g:"https://maps.google.com/?cid=3046234055436785039",ax:1},
+{n:"Sushi Sake Restaurant Kiyota",c:["eat"],d:"D1",p:3,pr:"300–800k ₫ pp",t:["Sushi","Japanese"],note:"Sushi.",lat:10.79029,lng:106.70987,a:"",g:"https://maps.google.com/?cid=17861541609897890028",ax:1},
+{n:"Oasis Cafe",c:["cafe"],d:"PN",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Crazy cafe with so many sections and koi fish, ponds and trees.",lat:10.79267,lng:106.67085,a:"",g:"https://maps.google.com/?cid=15787164377276589841",ax:1},
+{n:"Tiệm cà phê Noọng Ơi",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Beautifully aesthetic, nature and plants and just feels like a dream world.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4724009860370681948",ax:1},
+{n:"Nhâm Café",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Vintage","Pastry","Café"],note:"Crazy pastry cafe, vintage aesthetic.",lat:10.74858,lng:106.67904,a:"",g:"https://maps.google.com/?cid=12469136914667953228",ax:1},
+{n:"Cái Tổ Chim",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Really picturesque place but 129k cover charge to get in.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3855642836272901195",ax:1},
+{n:"Ducky's Smash Burger",c:["eat"],d:"X",p:2,pr:"100–220k ₫",t:["Burgers","Local eats"],note:"Great smash burgers.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=1364198849344768835",ax:1},
+{n:"SOHO TOWN FOOD COURT",c:["eat"],d:"D4",p:2,pr:"100–250k ₫",t:["Street food","Local eats"],note:"BKK style food court? Range of street food.",lat:10.76163,lng:106.68951,a:"",g:"https://maps.google.com/?cid=4877544690471978980",ax:1},
+{n:"Bếp Ốc Sài Gòn",c:["eat"],d:"D1",p:2,pr:"200–450k ₫ pp",t:["Seafood","Local eats"],note:"Great little seafood in a courtyard.",lat:10.77046,lng:106.71845,a:"",g:"https://maps.google.com/?cid=15363901656217831174",ax:1},
+{n:"Phở bò Phú Gia",c:["eat"],d:"X",p:1,pr:"45–90k ₫",t:["Phở","Local eats"],note:"Pho highly recommended.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=10195528633443323253",ax:1},
+{n:"Pazzi Pizza",c:["eat"],d:"D5",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Good pizza and date spot.",lat:10.81407,lng:106.66086,a:"",g:"https://maps.google.com/?cid=8157051832600549305",ax:1},
+{n:"Hủ tiếu gà cá Hà Ký",c:["eat"],d:"X",p:1,pr:"40–85k ₫",t:["Hủ tiếu","Street food"],note:"Egg noodles with fish or chicken, fresh and delicious.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=11652540330777958917",ax:1},
+{n:"Restaurant Hương Lài",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Employees disadvantaged youths to help.",lat:10.77737,lng:106.69943,a:"",g:"https://maps.google.com/?cid=2866550184445538586",ax:1},
+{n:"Aoya Ramen",c:["eat"],d:"D5",p:2,pr:"120–220k ₫",t:["Ramen","Japanese"],note:"Ramen.",lat:10.74924,lng:106.67686,a:"",g:"https://maps.google.com/?cid=4876152627029677214",ax:1},
+{n:"KAKU IZAKAYA",c:["eat"],d:"D7",p:3,pr:"300–600k ₫ pp",t:["Izakaya","Japanese"],note:"Izakaya.",lat:10.74078,lng:106.67865,a:"",g:"https://maps.google.com/?cid=14576620112682161366",ax:1},
+{n:"一鳥 ICHITORI",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Yakitori.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9830723579319829872",ax:1},
+{n:"Omakase Tiger",c:["eat"],d:"X",p:3,pr:"800k–2M ₫ pp",t:["Omakase","Japanese"],note:"Excellent omakase and date spot.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=13127435834154685009",ax:1},
+{n:"A+C Coffee Experience",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Picturesque stunning cafe.",lat:10.74701,lng:106.67868,a:"",g:"https://maps.google.com/?cid=12141718517298812806",ax:1},
+{n:"FUME | Japanese Modern Cuisine",c:["eat"],d:"D7",p:2,pr:"100–250k ₫",t:["Local eats","Japanese"],note:"Japanese fine dining.",lat:10.73415,lng:106.69122,a:"",g:"https://maps.google.com/?cid=9888359046663086760",ax:1},
+{n:"Lam Lam Xưa Restaurant & Bar",c:["eat","drink"],d:"D7",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Local Saigonese cuisines.",lat:10.73074,lng:106.69038,a:"",g:"https://maps.google.com/?cid=13549336704989281998",ax:1},
+{n:"Prem Bistro and Cafe",c:["cafe"],d:"D1",p:1,pr:"45–95k ₫",t:["Vegetarian","Café"],note:"Delightful vegetarian, mid level, not too fancy. Cute little date spot.",lat:10.77525,lng:106.68921,a:"",g:"https://maps.google.com/?cid=14767520075004034669",ax:1},
+{n:"Bánh mì thịt nướng Bà Hà",c:["eat"],d:"X",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Bánh mì counter from the saved eats list.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8184635017035193970",ax:1},
+{n:"Bánh Mì Bà Huynh (Madam Win)",c:["eat"],d:"D4",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Smaller than the extreme size of the touristy one everyone goes too. 55k.",lat:10.74913,lng:106.69025,a:"",g:"https://maps.google.com/?cid=8896932288202701631",ax:1},
+{n:"Saveur Café Tân Định",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Amazing exterior looking cafe building. Indoor outdoor, leafy and rustic. Multi level.",lat:null,lng:null,a:"Tân Định",g:"https://maps.google.com/?cid=535466340715287651",ax:1},
+{n:"ngâm CAFE",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Vintage","Café"],note:"Vintage aesthetic, influencer photo central, wall of croissants. Cool little leafy courtyard.",lat:10.74929,lng:106.67864,a:"",g:"https://maps.google.com/?cid=2205517350869085429",ax:1},
+{n:"Tiem Mi Huu Ky",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Street food","Local eats"],note:"Wonton huge!",lat:10.79235,lng:106.70904,a:"",g:"https://maps.google.com/?cid=16899537596642219129",ax:1},
+{n:"Trần Pizza",c:["eat"],d:"D5",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Wood fired pizza.",lat:10.74808,lng:106.67806,a:"",g:"https://maps.google.com/?cid=7640938224498060475",ax:1},
+{n:"Quán Lẩu Dê 218 - 老賴羊肉火锅 - 1980",c:["eat"],d:"D1",p:2,pr:"150–300k ₫ pp",t:["BBQ","Street food"],note:"Viet bbq.",lat:10.76791,lng:106.70046,a:"",g:"https://maps.google.com/?cid=6306746393950388866",ax:1},
+{n:"Lamie Pizza",c:["eat"],d:"D1",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Detroit style pizza!",lat:10.7813,lng:106.70647,a:"",g:"https://maps.google.com/?cid=8685391558621809222",ax:1},
+{n:"ten.coffee",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Japanese"],note:"Japanese style cafe tucked away in the neighbourhood.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=2770371076522346319",ax:1},
+{n:"Breadventure",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Bakery","Café"],note:"Scando style bakery, cool cafe, bread looks sick.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=420202930159565115",ax:1},
+{n:"Cokernut Cafe",c:["cafe"],d:"PN",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cute little cafe my team took me to on day 1.",lat:10.79714,lng:106.66219,a:"",g:"https://maps.google.com/?cid=9488904172115832078",ax:1},
+{n:"Hai Cái Tẩy Cafe",c:["cafe"],d:"PN",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cosy art deco cafe.",lat:10.79165,lng:106.66573,a:"",g:"https://maps.google.com/?cid=5268308556412454651",ax:1},
+{n:"café nuta",c:["cafe"],d:"D2",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Modern boujee cafe.",lat:10.74593,lng:106.7221,a:"",g:"https://maps.google.com/?cid=10027180011493679719",ax:1},
+{n:"Rennoki Café",c:["cafe"],d:"D7",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:10.73134,lng:106.69862,a:"",g:"https://maps.google.com/?cid=13516948716748224470",ax:1},
+{n:"The Orange Ball",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4377872866285270916",ax:1},
+{n:"Trapart room",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Homely cafe.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6699168914382699731",ax:1},
+{n:"OKKIO",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=17082727238992717743",ax:1},
+{n:"Aramour Coffee Roasters Thao Dien",c:["cafe"],d:"D2",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cool little coffee hangout.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=15979436532484170053",ax:1},
+{n:"Thái Fiên by 15.22café",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Thai"],note:"Diner looking cafe.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8273208399179984695",ax:1},
+{n:"Keng cafe",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9488853741559171183",ax:1},
+{n:"Connect Saigon Cafe",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cute little cafe.",lat:10.74692,lng:106.67858,a:"",g:"https://maps.google.com/?cid=16863380210592267040",ax:1},
+{n:"Machiya Coffee",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Japanese"],note:"Zen Japanese looking cafe.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7582214868518337308",ax:1},
+{n:"Kéo Ghế Ra Ngồi",c:["cafe"],d:"D2",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Minimalist light filled cafe.",lat:10.77606,lng:106.73874,a:"",g:"https://maps.google.com/?cid=8834389124712580247",ax:1},
+{n:"Make Room",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cute records and cafe.",lat:10.74688,lng:106.67724,a:"",g:"https://maps.google.com/?cid=4455297584963266186",ax:1},
+{n:"HAUSE cafe",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Stylish scando cafe.",lat:10.74802,lng:106.67649,a:"",g:"https://maps.google.com/?cid=6734412441101204023",ax:1},
+{n:"HÔM",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=16723430124565939966",ax:1},
+{n:"Bò Né Bà Nũi",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Street food","Local eats"],note:"HK dim sum and sizzling egg meat dishes.",lat:10.77999,lng:106.68805,a:"",g:"https://maps.google.com/?cid=14194176294383005816",ax:1},
+{n:"Yuzu Omakase ゆずお任せ Ho Chi Minh",c:["eat"],d:"D1",p:3,pr:"800k–2M ₫ pp",t:["Omakase","Japanese"],note:"Fancy omakase.",lat:10.77551,lng:106.69138,a:"",g:"https://maps.google.com/?cid=8226006176679406222",ax:1},
+{n:"Bánh Mì Chấm Hung Tubes - Hai Bà Trưng",c:["eat"],d:"D1",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Dipping banh mi.",lat:10.78065,lng:106.71226,a:"Hai Bà Trưng",g:"https://maps.google.com/?cid=4933544081050976803",ax:1},
+{n:"Pasteur Street Craft Beer Le Thanh Ton",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.78057,lng:106.6911,a:"Pasteur",g:"https://maps.google.com/?cid=1409035383914615742",ax:1},
+{n:"PAMA Stew & Brew",c:["eat"],d:"D5",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Bo Kho!",lat:10.74872,lng:106.67658,a:"",g:"https://maps.google.com/?cid=2113664451814978564",ax:1},
+{n:"Tori Soba Mutahiro Ramen Restaurant",c:["eat"],d:"X",p:2,pr:"120–220k ₫",t:["Crab","Ramen","Japanese"],note:"Trang’s suggestion for ramen. Crab ramen 🦀.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=1531901194868505710",ax:1},
+{n:"Tiệm chè Kai Kai - 佳佳糖水 - Chè người Hoa",c:["cafe"],d:"PN",p:1,pr:"45–95k ₫",t:["Chè","Dessert"],note:"Chinese tofu dessert.",lat:10.80314,lng:106.66238,a:"",g:"https://maps.google.com/?cid=4192327496078904005",ax:1},
+{n:"Cơm chiên gà nướng sữa Thái Huy",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Thai"],note:"Thai kitchen from the saved eats list.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6213131676808857681",ax:1},
+{n:"Lion quán",c:["eat"],d:"D5",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Vietnamese curry noodles 👀.",lat:10.79493,lng:106.63725,a:"",g:"https://maps.google.com/?cid=17725624127157154957",ax:1},
+{n:"BROS KOREA",c:["eat"],d:"D4",p:2,pr:"100–250k ₫",t:["BBQ","Local eats"],note:"Great kbbq. $20 buffet of all good quality meat. Didn’t even order rice with it 😅.",lat:10.7432,lng:106.71473,a:"",g:"https://maps.google.com/?cid=15114376348974717688",ax:1},
+{n:"KHÁNH VY Sweets",c:["cafe"],d:"D3",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Local dessert shop.",lat:10.76067,lng:106.67308,a:"",g:"https://maps.google.com/?cid=14850556524447168744",ax:1},
+{n:"Flower market",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Loads of flowers and plants from dalat.",lat:10.77406,lng:106.688,a:"",g:"https://maps.google.com/?cid=9364746539282780090",ax:1},
+{n:"Restaurant 13",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Banh khot.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=5515548684107363112",ax:1},
+{n:"Cơm tấm đêm CUBO",c:["eat"],d:"D4",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Recommended by Khoa.",lat:10.74318,lng:106.69562,a:"",g:"https://maps.google.com/?cid=8222807451265015945",ax:1},
+{n:"Nhà Ba Teria - Craft Matcha & Coffee",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Matcha","Café"],note:"Cool concept cafe.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8194297469020873314",ax:1},
+{n:"Little Bear Wine Bar",c:["eat","drink"],d:"X",p:2,pr:"100–250k ₫",t:["Wine","Local eats"],note:"Bar from the saved list — tap through for the vibe.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=12341986316489180438",ax:1},
+{n:"Trung Nguyen Legend Coffee Thu Thiem",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=15085950676350759220",ax:1},
+{n:"Mámi Cocktails - Tapas & Bar",c:["eat","drink"],d:"X",p:2,pr:"100–250k ₫",t:["Cocktails","Local eats"],note:"Same owner as 86 proof. Cute place.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4135109678110360022",ax:1},
+{n:"THE JOKERS - Coffee&Beer",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4942046222233489667",ax:1},
+{n:"Pizza 4P's — Xuân Thủy",c:["eat"],d:"D2",p:2,pr:"150–350k ₫",t:["Pizza","Crab"],note:"Excellent pizza and pasta. Dough is light and fluffy and crisp. The crab pasta so creamy and tomato velvety.",lat:10.8021,lng:106.7331,a:"Xuân Thủy",g:"https://maps.google.com/?cid=1924187985198418895",ax:1},
+{n:"Dalcheeni Indian Restaurant Ho Chi Minh Saigon",c:["eat"],d:"D5",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Excellent Indian.",lat:10.82775,lng:106.6355,a:"",g:"https://maps.google.com/?cid=7548652263185269831",ax:1},
+{n:"Bar Commune Saigon",c:["eat","drink"],d:"D3",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Cool little intimate bar that plays records.",lat:10.78545,lng:106.68529,a:"",g:"https://maps.google.com/?cid=16894044649090540338",ax:1},
+{n:"Kapi Café",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=5996503327150601767",ax:1},
+{n:"Mountain Pearl Roastery",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cool little concept coffee shop.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3436077303630307023",ax:1},
+{n:"Saigon Bagel",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Heard it’s good bagels.",lat:10.76672,lng:106.69085,a:"",g:"https://maps.google.com/?cid=6701489942661253439",ax:1},
+{n:"TONKOTSU RAMEN ICHIBANKEN - Thao Dien",c:["eat"],d:"D2",p:2,pr:"120–220k ₫",t:["Ramen","Japanese"],note:"Pretty damn good tonkatsu ramen.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=7263205595832912073",ax:1},
+{n:"Quán Cơm Tấm Ba Đạt",c:["eat"],d:"D2",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Good com tam, just make sure it’s grilled fresh.",lat:10.80085,lng:106.7329,a:"",g:"https://maps.google.com/?cid=4382522731610535502",ax:1},
+{n:"Pendolasco",c:["eat"],d:"D2",p:2,pr:"100–250k ₫",t:["Local eats","Italian"],note:"Really good Italian.",lat:10.80667,lng:106.73474,a:"",g:"https://maps.google.com/?cid=16861075687303071768",ax:1},
+{n:"86 PROOF Whiskey Bar",c:["eat","drink"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Great whiskey bar and great for people watching.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=1713473475052878941",ax:1},
+{n:"Trạm Hầm",c:["eat"],d:"D5",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Dinner before NYE.",lat:10.74836,lng:106.67713,a:"",g:"https://maps.google.com/?cid=13814518923357021147",ax:1},
+{n:"Captain Phook",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4576162265167994921",ax:1},
+{n:"Ben Nghe Street Food",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Street food","Local eats"],note:"From the saved eats list — tap through for photos and menu.",lat:10.77346,lng:106.69727,a:"",g:"https://maps.google.com/?cid=11128028587886157075",ax:1},
+{n:"Café Slow Thao Dien",c:["cafe"],d:"D2",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Cute quaint cafe. Excellent coffee and pretty decent croissant.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=8214228417064823674",ax:1},
+{n:"Oliver's Pizza",c:["eat"],d:"D1",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Good grandma slice of pizza.",lat:10.78781,lng:106.69646,a:"",g:"https://maps.google.com/?cid=12084639575453853988",ax:1},
+{n:"Hải Hội Quán",c:["eat"],d:"D2",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Looks good for local cuisine in Thao Dien.",lat:10.80363,lng:106.73412,a:"Thảo Điền",g:"https://maps.google.com/?cid=12792869829578086145",ax:1},
+{n:"Hà Ký Mì Gia",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Awesome fresh made noodles.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3322159543627302141",ax:1},
+{n:"Cô Quyên Xứ Quảng",c:["eat"],d:"PN",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Central Vietnamese cuisine.",lat:10.79137,lng:106.67604,a:"",g:"https://maps.google.com/?cid=3589830300172950695",ax:1},
+{n:"Bánh Xèo Bình Định Nẫu Ơi",c:["eat"],d:"BT",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Crispy crispy banh xeo.",lat:10.80324,lng:106.71562,a:"",g:"https://maps.google.com/?cid=9815002580156366251",ax:1},
+{n:"Okra Food Bar",c:["eat","drink"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Bar from the saved list — tap through for the vibe.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=12843145178563224060",ax:1},
+{n:"Ho Thi Ky Food Street",c:["eat"],d:"D4",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.74791,lng:106.68823,a:"",g:"https://maps.google.com/?cid=12662087525625938570",ax:1},
+{n:"Bánh Mì 37",c:["eat"],d:"D5",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Bánh mì counter from the saved eats list.",lat:10.7588,lng:106.68281,a:"",g:"https://maps.google.com/?cid=17655044038348101753",ax:1},
+{n:"Phở Việt Nam | Phở Ngon Sài Gòn",c:["eat"],d:"D3",p:1,pr:"45–90k ₫",t:["Phở","Local eats"],note:"Phở house — one bowl, done right.",lat:10.76915,lng:106.68302,a:"",g:"https://maps.google.com/?cid=9251094531855348851",ax:1},
+{n:"Phở Dậu",c:["eat"],d:"D1",p:1,pr:"45–90k ₫",t:["Phở","Local eats"],note:"Phở house — one bowl, done right.",lat:10.7717,lng:106.69234,a:"",g:"https://maps.google.com/?cid=8480321802118390278",ax:1},
+{n:"CLAY - Cocktails & Cuisine",c:["eat","drink"],d:"X",p:2,pr:"100–250k ₫",t:["Cocktails","Local eats"],note:"Bar from the saved list — tap through for the vibe.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8238215162200484375",ax:1},
+{n:"Elgin Saigon",c:["eat"],d:"D7",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.7397,lng:106.70361,a:"",g:"https://maps.google.com/?cid=15791841343641597937",ax:1},
+{n:"Glouglou Wine Shop",c:["eat","drink"],d:"D2",p:2,pr:"100–250k ₫",t:["Wine","Local eats"],note:"Bar from the saved list — tap through for the vibe.",lat:10.72551,lng:106.72097,a:"",g:"https://maps.google.com/?cid=3526757430579832442",ax:1},
+{n:"Bún riêu tóp mỡ mọc giòn",c:["eat"],d:"D5",p:1,pr:"40–80k ₫",t:["Bún riêu","Street food"],note:"Bún riêu — crab-tomato noodle soup.",lat:10.75564,lng:106.68381,a:"",g:"https://maps.google.com/?cid=15712528943035768415",ax:1},
+{n:"Com Tam Hong Calmette",c:["eat"],d:"D1",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Cơm tấm — smoky grilled pork chop over broken rice.",lat:10.76329,lng:106.70361,a:"Calmette",g:"https://maps.google.com/?cid=243794697659704199",ax:1},
+{n:"Cơm tấm Nguyễn Văn Cừ",c:["eat"],d:"D2",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Cơm tấm — smoky grilled pork chop over broken rice.",lat:10.74842,lng:106.71937,a:"",g:"https://maps.google.com/?cid=11297353480852994875",ax:1},
+{n:"Kanpaisaigon",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3479434391091262973",ax:1},
+{n:"Twist Cafe & Bar",c:["cafe","drink"],d:"X",p:2,pr:"80–200k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=10689558830531855038",ax:1},
+{n:"El Camino Taqueria :: District 2",c:["eat"],d:"D4",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.76288,lng:106.7099,a:"",g:"https://maps.google.com/?cid=11177315925406312065",ax:1},
+{n:"Le Café des Stagiaires - Saigon",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=16893446280067195176",ax:1},
+{n:"Chợ 200",c:["eat"],d:"D4",p:2,pr:"100–250k ₫",t:["Street food","Local eats"],note:"Street food.",lat:10.7555,lng:106.70917,a:"",g:"https://maps.google.com/?cid=2136443511534546141",ax:1},
+{n:"Phúc Long Coffee & Tea Express",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Coffee stop from the saved list — tap through for the room.",lat:10.75227,lng:106.66086,a:"",g:"https://maps.google.com/?cid=6466328933548369358",ax:1},
+{n:"433/8 Hai Bà Trưng",c:["eat"],d:"PN",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.79062,lng:106.68766,a:"Hai Bà Trưng",g:"https://maps.google.com/?cid=15224786959884804661",ax:1},
+{n:"Cơm Tấm Phúc Lộc Thọ",c:["eat"],d:"X",p:1,pr:"40–80k ₫",t:["Cơm tấm","Street food"],note:"Cơm tấm — smoky grilled pork chop over broken rice.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8933196275653122103",ax:1},
+{n:"Bánh Xèo Bánh Khọt Gỏi Cuốn",c:["eat"],d:"D3",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.79273,lng:106.69041,a:"",g:"https://maps.google.com/?cid=2249736338261188155",ax:1},
+{n:"Quán Dì Gái",c:["eat"],d:"PN",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.7994,lng:106.67353,a:"",g:"https://maps.google.com/?cid=12381024562400778401",ax:1},
+{n:"5KU Station",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.77932,lng:106.70365,a:"",g:"https://maps.google.com/?cid=2119819535424726314",ax:1},
+{n:"Bánh Mì Bảy Hổ",c:["eat"],d:"D1",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Bánh mì counter from the saved eats list.",lat:10.79036,lng:106.69663,a:"",g:"https://maps.google.com/?cid=11573284370566081101",ax:1},
+{n:"Binh Dien Product Market",c:["eat"],d:"X",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"Marketplace.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=7564006223935684127",ax:1},
+{n:"Maison Marou Saigon",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.76943,lng:106.69786,a:"",g:"https://maps.google.com/?cid=1553739568733118892",ax:1},
+{n:"Kậu Ba Quán",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Local eats","Saved find"],note:"From the saved eats list — tap through for photos and menu.",lat:10.79269,lng:106.70202,a:"",g:"https://maps.google.com/?cid=6232841967674330559",ax:1},
+{n:"CO PORT Kajun Seafood",c:["eat"],d:"D3",p:2,pr:"200–450k ₫ pp",t:["Seafood","Local eats"],note:"Seafood house — pick it, point at it, feast.",lat:10.78284,lng:106.67135,a:"",g:"https://maps.google.com/?cid=15441673579126930309",ax:1},
+{n:"Bar PICCOLO",c:["drink"],d:"D2",p:2,pr:"150–300k ₫",t:["Wine","Cocktails","Alley bar"],note:"Cute little alley wine bar with great cocktails — lowkey but quaint, hidden in a Thảo Điền hẻm.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=1629627047635959167",ax:1},
+{n:"Bodega Saigon",c:["drink"],d:"D4",p:2,pr:"90–200k ₫",t:["Casual","Hangout"],note:"Casual bodega-style hangout off the saved bar list — easy drinks with a snacky menu.",lat:10.74576,lng:106.7053,a:"",g:"https://maps.google.com/?cid=15718210318543222584",ax:1},
+{n:"The Observatory",c:["drink"],d:"D4",p:2,pr:"150–350k ₫",t:["Rooftop","Club","Techno","Late night"],note:"Great rooftop club — Saigon's long-running home for proper techno and house, going till very late.",lat:10.7664,lng:106.706,a:"",g:"https://maps.google.com/?cid=7257621653164571611",ax:1},
+{n:"RAW + Atelier",c:["drink"],d:"D5",p:3,pr:"250–420k ₫",t:["Cocktails","Craft"],note:"Epic and amazing cocktails — inventive craft builds with local ingredients; one of the city's serious cocktail rooms.",lat:10.7468,lng:106.68206,a:"",g:"https://maps.google.com/?cid=136497845216576088",ax:1},
+{n:"Another Drink Saigon",c:["drink"],d:"D4",p:2,pr:"90–190k ₫",t:["Cocktails","Cosy"],note:"Cute little bar — the name is the pitch. Good stop on a D1 crawl.",lat:10.7439,lng:106.71318,a:"",g:"https://maps.google.com/?cid=599522014815549732",ax:1},
+{n:"Úb Stairs",c:["drink"],d:"X",p:1,pr:"50–130k ₫",t:["Rooftop","Cheap & cheerful"],note:"Rooftop bar up a sneaky staircase — cheap cold beers, plastic-stool energy, big breeze.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=14617984993884069879",ax:1},
+{n:"LEGATO",c:["drink"],d:"BT",p:2,pr:"80–180k ₫",t:["Bar strip","Bình Thạnh"],note:"Part of the Phạm Viết Chánh bar alley in Bình Thạnh — hop between this, Khoai and Birdy in one night.",lat:10.7905,lng:106.7052,a:"Phạm Viết Chánh",g:"https://maps.google.com/?cid=8992763135217843132",ax:1},
+{n:"Khoai",c:["drink"],d:"BT",p:1,pr:"40–100k ₫",t:["Dive bar","Cats"],note:"Cute little dive bar with cats, on the Phạm Viết Chánh strip. Cheap drinks, zero pretension.",lat:10.7907,lng:106.705,a:"Phạm Viết Chánh",g:"https://maps.google.com/?cid=16354487899915626878",ax:1},
+{n:"Birdy",c:["drink"],d:"BT",p:2,pr:"90–190k ₫",t:["Intimate","Listening bar"],note:"Intimate cute little bar — low-lit listening-bar energy on the Phạm Viết Chánh strip.",lat:10.7906,lng:106.7048,a:"Phạm Viết Chánh",g:"https://maps.google.com/?cid=14978492361717609215",ax:1},
+{n:"The Rabbit Hole Irish Bar",c:["drink"],d:"D2",p:2,pr:"90–200k ₫",t:["Irish pub","Sports"],note:"Irish pub in Thảo Điền — pints, sport on the screens and pub comfort food.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=4246694417109561833",ax:1},
+{n:"NEO-",c:["drink"],d:"D3",p:2,pr:"90–200k ₫",t:["Rooftop","Chill"],note:"Chill rooftop bar in D3 — laid-back crowd, good for an easy evening rather than a big one.",lat:10.78,lng:106.685,a:"",g:"https://maps.google.com/?cid=7533317437649880821",ax:1},
+{n:"CINÉ Saigon",c:["drink"],d:"D5",p:2,pr:"100–250k ₫",t:["Live music","Club"],note:"Club and live music venue — indie gigs, film-club energy and DJ nights in central D1.",lat:10.74932,lng:106.67633,a:"",g:"https://maps.google.com/?cid=5070320405928409999",ax:1},
+{n:"Mowe Wine Space",c:["drink"],d:"X",p:2,pr:"150–280k ₫/glass",t:["Wine","Natural wine","Vinyl"],note:"Wine and vinyl — natural pours with records spinning; sit at the bar and let them choose.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=1504549485898530004",ax:1},
+{n:"Fang Hub",c:["drink"],d:"X",p:1,pr:"60–150k ₫",t:["Live music","Local scene"],note:"Live music, Vietnamese rock — a local-scene venue worth the trek west when there's a gig on.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=16166771397897122444",ax:1},
+{n:"CỘI",c:["drink"],d:"X",p:2,pr:"100–220k ₫",t:["Live music","Jazz"],note:"Live music, jazzy — mellow sets most nights in a warm little room.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9292164277373497164",ax:1},
+{n:"Cipherz Rooftop",c:["drink","cafe"],d:"PN",p:2,pr:"70–180k ₫",t:["Rooftop","Day-to-night"],note:"Cool rooftop bar and cafe — coffee by day, drinks and skyline by night.",lat:10.79243,lng:106.68664,a:"",g:"https://maps.google.com/?cid=6655091414461938649",ax:1},
+{n:"BÀ BAR",c:["drink"],d:"X",p:2,pr:"80–180k ₫",t:["Neighbourhood","Cocktails"],note:"Small neighbourhood cocktail spot from the saved bar list — local crowd, easy prices.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3851059323379454639",ax:1},
+{n:"adidas Outlet Binh Thoi Ho Chi Minh City",c:["shop"],d:"D5",p:2,pr:"300k–1.5M ₫",t:["Outlet","Sportswear"],note:"Adidas outlet — discounted lines out west in Bình Thới; hit or miss but cheap when it hits.",lat:10.757,lng:106.665,a:"Bình Thới",g:"https://maps.google.com/?cid=2599315404948136407",ax:1},
+{n:"Routine Lê Lợi",c:["shop"],d:"D3",p:2,pr:"200–600k ₫",t:["Local brand","Basics"],note:"Good local basics — clean everyday staples from a homegrown brand, right on Lê Lợi.",lat:10.78591,lng:106.69004,a:"Lê Lợi, D1",g:"https://maps.google.com/?cid=17528019569385408885",ax:1},
+{n:"matchup REST & Wellness",c:["exp"],d:"D2",p:2,pr:"300–600k ₫/session",t:["Wellness","Ice bath","Sauna","Recovery"],note:"Ice bath and sauna — contrast-therapy studio for the post-padel recovery day.",lat:10.8035,lng:106.733,a:"",g:"https://maps.google.com/?cid=647337442606357378",ax:1},
+{n:"Mèo Tuxedo",c:["shop"],d:"D5",p:1,pr:"50–90k ₫",t:["Cat cafe","Coffee"],note:"Cat café with resident tuxedo cats — coffee plus therapy animals.",lat:10.74782,lng:106.67897,a:"",g:"https://maps.google.com/?cid=13537777524991821446",ax:1},
+{n:"grade b",c:["shop"],d:"D2",p:2,pr:"100–600k ₫",t:["Ceramics","Small batch"],note:"Ceramics — small-batch, imperfect-on-purpose pieces. Sits in the Thảo Điền craft cluster.",lat:10.8045,lng:106.7335,a:"Thảo Điền",g:"https://maps.google.com/?cid=7699222114139981682",ax:1},
+{n:"TuHu Ceramics",c:["shop"],d:"D2",p:2,pr:"100–600k ₫",t:["Ceramics","Handmade"],note:"Ceramics — handmade tableware and objects, next door to the grade b crowd in Thảo Điền.",lat:10.8047,lng:106.7337,a:"Thảo Điền",g:"https://maps.google.com/?cid=15143970865984565465",ax:1},
+{n:"Yêu Đĩa Than",c:["shop"],d:"X",p:2,pr:"200k–1.5M ₫",t:["Records & vinyl","Vintage","Crate digging"],note:"Can contain vintage records — crate-digging with genuine finds if you have the patience.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=13488912287092128475",ax:1},
+{n:"SASA Spa & Relaxing",c:["exp"],d:"X",p:1,pr:"250–500k ₫ / 60–90 min",t:["Wellness","Massage"],note:"Reliable neighbourhood spa — solid massages at local prices.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6276348462169524988",ax:1},
+{n:"La Vela Saigon Hotel",c:["exp"],d:"D3",p:3,pr:"~500k ₫ day pass",t:["Pool day","Infinity pool"],note:"Epic infinity pool — buy a day pass and float above D3 for an afternoon.",lat:10.78856,lng:106.68543,a:"",g:"https://maps.google.com/?cid=15143436662454001615",ax:1},
+{n:"Isla Oasis",c:["shop","cafe"],d:"D2",p:2,pr:"150–300k ₫ min spend",t:["Pool day","Café"],note:"Pool cafe in Thảo Điền — order a coffee, claim a lounger, pretend you're on holiday.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=18241339968731174048",ax:1},
+{n:"Mystic Night Show",c:["exp"],d:"X",p:3,pr:"from ~700k ₫",t:["Magic show","Date night"],note:"Petey Majik's magic show — polished illusion theatre; a genuinely fun date-night wildcard.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=12002210092889613469",ax:1},
+{n:"32",c:["shop"],d:"X",p:0,pr:"",t:["Mystery pin","Browse-worthy"],note:"Unlabelled saved pin — a Thảo Điền mystery. Tap through to Maps and find out.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3464939686040072350",ax:1},
+{n:"CỘNG HƯỞNG Art & Craft Shop",c:["shop"],d:"D3",p:1,pr:"50–400k ₫",t:["Gifts","Handmade"],note:"Arts & craft gifts — handmade pieces that don't feel like airport souvenirs.",lat:10.77396,lng:106.68742,a:"",g:"https://maps.google.com/?cid=2229532807512517520",ax:1},
+{n:"Gốm Sài Gòn - Chi nhánh 3",c:["shop"],d:"D5",p:1,pr:"50–400k ₫",t:["Ceramics","Pottery"],note:"Pottery — affordable Vietnamese ceramics; stock up on bowls and cups.",lat:10.74823,lng:106.67917,a:"",g:"https://maps.google.com/?cid=18057531270624420998",ax:1},
+{n:"Gốm Sài Gòn",c:["shop"],d:"PN",p:1,pr:"50–400k ₫",t:["Ceramics","Pottery"],note:"Pottery — the original branch; same affordable handmade ceramics.",lat:10.80035,lng:106.66333,a:"",g:"https://maps.google.com/?cid=7950614818219475470",ax:1},
+{n:"Rue Miche Boutique",c:["shop"],d:"X",p:2,pr:"200–700k ₫",t:["Local brand","Boutique"],note:"Local clothing — feminine cuts from a small Saigon label.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=4925996654304028258",ax:1},
+{n:"The New Playground",c:["shop"],d:"D1",p:2,pr:"200–800k ₫",t:["Local brand","Streetwear"],note:"Local streetwear in the famous underground mall off Lý Tự Trọng — a dozen homegrown labels in one basement.",lat:10.77825,lng:106.70104,a:"26 Lý Tự Trọng, D1",g:"https://maps.google.com/?cid=14617869431819714735",ax:1},
+{n:"Mozaic Space",c:["exp"],d:"D7",p:2,pr:"200–800k ₫",t:["Wellness","Local brand","Multi-brand"],note:"Local clothing — multi-brand space for homegrown designers.",lat:10.72697,lng:106.69159,a:"",g:"https://maps.google.com/?cid=11526330211389544278",ax:1},
+{n:"SEESON IRL FLAGSHIP 199 ĐBP",c:["shop"],d:"D1",p:2,pr:"400k–1.2M ₫",t:["Eyewear","Local brand"],note:"Local sunnies, maybe — homegrown eyewear flagship on Điện Biên Phủ.",lat:10.77982,lng:106.70715,a:"199 Điện Biên Phủ",g:"https://maps.google.com/?cid=17062489541937604178",ax:1},
+{n:"LIDER",c:["shop"],d:"D1",p:2,pr:"200–600k ₫",t:["Local brand","Streetwear"],note:"Local clothing — streetwear staple from the Saigon scene.",lat:10.77372,lng:106.7026,a:"",g:"https://maps.google.com/?cid=10422816824322226952",ax:1},
+{n:"Whose Studio",c:["shop"],d:"D5",p:1,pr:"100–400k ₫",t:["Local brand","Budget"],note:"Cheap quality local clothing brand — everyday pieces without the markup.",lat:10.74707,lng:106.67841,a:"",g:"https://maps.google.com/?cid=8045324498821750674",ax:1},
+{n:"Big Daddy's",c:["exp"],d:"X",p:2,pr:"~300–400k ₫/session",t:["Axe throwing","Group fun"],note:"Axe & knife throwing with a Vietnam veteran — exactly as advertised, and a great story after.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8847749436794833659",ax:1},
+{n:"DAMNSHP",c:["shop"],d:"D1",p:2,pr:"200–900k ₫",t:["Skate","Screen print"],note:"Cool little skate shop, screen printing their own shirts — decks, tees and attitude.",lat:10.78531,lng:106.7188,a:"",g:"https://maps.google.com/?cid=13195530063832487668",ax:1},
+{n:"Yêu Cây Studio",c:["exp"],d:"X",p:1,pr:"50–500k ₫",t:["Wellness","Plants","Nursery"],note:"Nursery recommended by a nice day spa — houseplants and pots for the apartment jungle.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=12478707129757504598",ax:1},
+{n:"règarden",c:["shop"],d:"X",p:1,pr:"50–500k ₫",t:["Plants","Nursery"],note:"Nursery recommended by Trang — greenery, pots and repotting help.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8031972073813395235",ax:1},
+{n:"Flyover Starry Sky Art Museum",c:["exp"],d:"X",p:2,pr:"~200–350k ₫",t:["Museum","Immersive"],note:"Trippy immersive light exhibitions — bring a camera and low expectations of subtlety.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=18164400682429549904",ax:1},
+{n:"SaigonExotic",c:["shop"],d:"D3",p:2,pr:"200k–1.2M ₫",t:["Skate","Local brand"],note:"Skate shop — boards and local streetwear from the scene.",lat:10.76696,lng:106.66408,a:"",g:"https://maps.google.com/?cid=448757556444966585",ax:1},
+{n:"SECTOR Store",c:["shop"],d:"D7",p:2,pr:"200–800k ₫",t:["Local brand","Streetwear"],note:"Local multi-brand streetwear store from the saved list.",lat:10.73762,lng:106.67918,a:"",g:"https://maps.google.com/?cid=5200369255994744518",ax:1},
+{n:"Van Thanh Swimming Pool",c:["exp"],d:"BT",p:1,pr:"~60–100k ₫ entry",t:["Pool day","Park"],note:"Public swimming pool and park — old-school Saigon weekend institution; cheap entry, shady lawns.",lat:10.79718,lng:106.71515,a:"",g:"https://maps.google.com/?cid=9930437989605271785",ax:1},
+{n:"Vesta Lifestyle & Gifts - Flagship store",c:["shop"],d:"X",p:2,pr:"100–600k ₫",t:["Gifts","Local made"],note:"Great locally made gifts — a reliable one-stop before flying out.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=428940482737489109",ax:1},
+{n:"26 Lý Tự Trọng",c:["shop"],d:"D1",p:1,pr:"50–400k ₫",t:["Thrift","Treasure hunt"],note:"Thrift shops stacked through an old building — dig through floor by floor.",lat:10.77813,lng:106.70117,a:"26 Lý Tự Trọng, D1",g:"https://maps.google.com/?cid=17100984792016624462",ax:1},
+{n:"The Highball Garment Store",c:["shop"],d:"X",p:1,pr:"100–500k ₫",t:["Vintage","Thrift"],note:"Vintage thrift shop — curated secondhand with a workwear lean.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9227087333533556285",ax:1},
+{n:"Mayhem Saigon Vintage Store",c:["shop"],d:"D1",p:1,pr:"100–500k ₫",t:["Vintage","Local brand","Posters & pins"],note:"Cool little vintage store — great range of shirts and jackets, plus movie posters, pins and stickers.",lat:10.77381,lng:106.69812,a:"",g:"https://maps.google.com/?cid=14795586265961257459",ax:1},
+{n:"TUYÊN OFFICIAL",c:["shop"],d:"X",p:2,pr:"200–600k ₫",t:["Local brand","90s style"],note:"Locally made 90's style clothing — baggy fits and throwback graphics.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=253066613510000014",ax:1},
+{n:"Deeritage - Vintage Jewelry",c:["shop"],d:"X",p:2,pr:"200k–2M ₫",t:["Vintage","Jewellery","Local brand"],note:"Vintage jewellery store — one-off rings, chains and oddities.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6174626808470813418",ax:1},
+{n:"Vintage store - Have a good day",c:["shop"],d:"D5",p:1,pr:"50–300k ₫",t:["Vintage","Thrift","Local brand","Cheap finds"],note:"Cool little op shop — cheap racks, occasional gold.",lat:10.79381,lng:106.62967,a:"",g:"https://maps.google.com/?cid=1285697662791262894",ax:1},
+{n:"LUMA Saigon",c:["shop","cafe"],d:"X",p:2,pr:"300k–1.5M ₫",t:["Designer","Café"],note:"Cafe / stylish clothing brand shop — browse the rails with a flat white in hand.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6989560109795745630",ax:1},
+{n:"JELLYFISH SAIGON",c:["shop"],d:"D5",p:2,pr:"300k–1.5M ₫",t:["Jewellery","Local brand","Designer","LGBTQIA+"],note:"Locally made LGBTQIA+ silverware jewellery — bold pieces from a proud local studio.",lat:10.74883,lng:106.68657,a:"",g:"https://maps.google.com/?cid=18009518676214901650",ax:1},
+{n:"DMDSTUDIOS",c:["shop"],d:"D7",p:2,pr:"250–700k ₫",t:["Designer","Basics"],note:"Local basics — a high quality version of Uniqlo, as Mark puts it.",lat:10.74171,lng:106.69131,a:"",g:"https://maps.google.com/?cid=14763178053511258499",ax:1},
+{n:"waa. studios",c:["shop"],d:"D5",p:3,pr:"700k–2M ₫",t:["Footwear","Designer","Handmade"],note:"Fancy leather sandals — handmade and worth the splurge.",lat:10.74722,lng:106.68015,a:"",g:"https://maps.google.com/?cid=12994798461372893824",ax:1},
+{n:"Ananas Đặng Thị Nhu - Standard Store",c:["shop"],d:"D1",p:2,pr:"400–900k ₫",t:["Footwear","Local brand","Sneakers"],note:"Locally made Converse-style shoes from recycled materials, plus good quality t-shirts.",lat:10.77044,lng:106.71472,a:"Đặng Thị Nhu, D1",g:"https://maps.google.com/?cid=12322564665652189095",ax:1},
+{n:"Therésa Spa",c:["exp"],d:"D2",p:2,pr:"400–800k ₫ / 60–90 min",t:["Wellness","Massage"],note:"Excellent therapeutic massage — firm, gets into the right knots. Great atmosphere and super friendly service. Mark-tested, 5 stars.",lat:10.802,lng:106.738,a:"Thảo Điền",g:"https://maps.google.com/?cid=4620402609465124766",ax:1},
+{n:"Thuong Xanh Film Store",c:["shop"],d:"D4",p:1,pr:"100–300k ₫/roll",t:["Film & camera","Cheap film"],note:"Cheap film — stock up on rolls before a shoot weekend.",lat:10.74324,lng:106.6956,a:"",g:"https://maps.google.com/?cid=12887517589018696362",ax:1},
+{n:"Botanist Lab by CIRCADIAN",c:["exp"],d:"X",p:2,pr:"nightly rates",t:["Stay","Plant-filled"],note:"Cute little Airbnb from 2023 — plant-filled stay if you need a design-y base or a staycation.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=17168211069945597963",ax:1},
+{n:"47plus minilab",c:["shop"],d:"X",p:1,pr:"80–200k ₫/roll",t:["Film & camera","Dev & scan"],note:"Film development — reliable minilab for developing and scanning your rolls.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=6619027472617853704",ax:1},
+{n:"COMPOUND GARMENT",c:["shop"],d:"X",p:2,pr:"300–900k ₫",t:["Designer","90s style"],note:"Cool plain and 90's-style pants, jackets and shirts — quiet, well-cut pieces.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=10335651771723261769",ax:1},
+{n:"Mây Concept - Thảo Điền",c:["shop"],d:"D2",p:2,pr:"200–800k ₫",t:["Vegan","Designer","Fragrance"],note:"Vegan and ethical fragrances, face wash and creams — Aesop / Le Labo vibes, made locally.",lat:10.8036,lng:106.734,a:"Thảo Điền",g:"https://maps.google.com/?cid=12772447535616465093",ax:1},
+{n:"themossbox",c:["shop"],d:"D1",p:2,pr:"200–800k ₫",t:["Plants","Terrarium"],note:"Mossy garden vibes — terrariums and tiny green worlds.",lat:10.78584,lng:106.7028,a:"",g:"https://maps.google.com/?cid=10058445282551487378",ax:1},
+{n:"AquaGarden",c:["shop"],d:"X",p:2,pr:"200k–1M ₫",t:["Plants","Aquascape"],note:"Terrrrarium — aquascapes and glass gardens.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9241923949178048815",ax:1},
+{n:"so much closer Vietnam",c:["shop"],d:"X",p:1,pr:"50–400k ₫",t:["Gifts","Art"],note:"Cute art and gift store — prints, objects and small joys.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=9734438750337251003",ax:1},
+{n:"Dinh Design Store - Independence Palace Souvenir Shop",c:["shop"],d:"D1",p:2,pr:"100–700k ₫",t:["Souvenirs","Design"],note:"Design art store at Independence Palace — actually-good souvenirs with a modernist streak.",lat:10.7796,lng:106.72093,a:"Independence Palace, D1",g:"https://maps.google.com/?cid=9317094664162518432",ax:1},
+{n:"Vina Design Store at the Post Office",c:["shop"],d:"D1",p:2,pr:"100–600k ₫",t:["Souvenirs","Design"],note:"Design goods inside the Central Post Office — grab something better than a fridge magnet.",lat:10.76776,lng:106.68938,a:"Central Post Office, D1",g:"https://maps.google.com/?cid=2250908384630559984",ax:1},
+{n:"Antique Street",c:["shop"],d:"D1",p:2,pr:"haggle",t:["Antiques","Street of shops"],note:"Lê Công Kiều antique row — a whole street of curios, brass, watches and maybe-genuine relics. Haggle.",lat:10.77054,lng:106.70016,a:"Lê Công Kiều, D1",g:"https://maps.google.com/?cid=14128651088171038717",ax:1},
+{n:"Vina Groove",c:["shop"],d:"PN",p:2,pr:"200k–1.5M ₫",t:["Records & vinyl","Crate digging"],note:"Record store — Vietnamese pressings and imports for the crate diggers.",lat:10.81352,lng:106.66999,a:"",g:"https://maps.google.com/?cid=6724481135239675426",ax:1},
+{n:"Hãng Đĩa Thời Đại (Times Records)",c:["shop"],d:"PN",p:2,pr:"300k–1.5M ₫",t:["Records & vinyl","New & reissue"],note:"Times Records — the best-known vinyl shop in town; new pressings, reissues and players.",lat:10.79935,lng:106.67483,a:"",g:"https://maps.google.com/?cid=17164358474306825309",ax:1},
+{n:"Vinyl Việt",c:["shop"],d:"D5",p:2,pr:"200k–1.5M ₫",t:["Records & vinyl","Browse"],note:"Vinyl shop from the saved list — worth a flick-through when nearby.",lat:10.74717,lng:106.67878,a:"",g:"https://maps.google.com/?cid=5267652972320673893",ax:1},
+{n:"Bluish Records",c:["shop"],d:"X",p:2,pr:"200k–1M ₫",t:["Records & vinyl","Indie"],note:"Small record store — indie leanings and a tidy secondhand crate.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=5107839947020009989",ax:1},
+{n:"CAFE Sài Gòn ĐĨA THAN",c:["shop","cafe"],d:"D5",p:1,pr:"45–90k ₫",t:["Records & vinyl","Café"],note:"Vinyl café — cà phê with records playing on the house turntable.",lat:10.8215,lng:106.65348,a:"",g:"https://maps.google.com/?cid=6971717320014582054",ax:1},
+{n:"Spa Đông Y Tĩnh An",c:["exp"],d:"X",p:2,pr:"300–600k ₫",t:["Wellness","Traditional"],note:"Traditional đông y (Eastern medicine) spa — herbal treatments, cupping and deep-pressure massage.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=11007266470849705751",ax:1},
+// ---- FROM MARK'S STAR REVIEWS ----
+{n:"Drift Bar & Café",c:["drink","cafe"],d:"D1",p:2,pr:"60–160k ₫",t:["Canal-side","Day-to-night"],note:"Rated 5 stars by Mark — laid-back canal-side spot on Hoàng Sa; coffee by day, drinks by night.",lat:10.7896,lng:106.6975,a:"27 Hoàng Sa",g:"https://www.google.com/maps/place//data=!4m2!3m1!1s0x0:0x135da5f8eaad04db",ax:1},
+{n:"Saigon on Motorbike",c:["exp"],d:"D3",p:3,pr:"~1–1.5M ₫ / tour",t:["Food tour","Back-of-bike"],note:"Rated 5 stars — city and street-food tours from the back of a motorbike. The right way to meet Saigon.",lat:10.7695,lng:106.6810,a:"51/11 Cao Thắng",g:"https://www.google.com/maps/place//data=!4m2!3m1!1s0x0:0x2f0dc811c0230e6e",ax:1},
+{n:"Warning Zone — M Plaza",c:["exp"],d:"D1",p:2,pr:"100–300k ₫",t:["Arcade","Games","Rainy day"],note:"Rated 4 stars — arcade games, VR and time-attack fun inside M Plaza on Lê Duẩn.",lat:10.7822,lng:106.7000,a:"39 Lê Duẩn",g:"https://www.google.com/maps/place//data=!4m2!3m1!1s0x0:0x81b337c21bef409d",ax:1},
+{n:"Pasteur Street — Lê Thánh Tôn",c:["drink"],d:"D1",p:1,pr:"80–180k ₫/pint",t:["Craft beer","Taproom"],note:"Rated 5 stars — the Japan-town taproom of Pasteur Street. Same Jasmine IPA, different alley.",lat:10.7822,lng:106.7043,a:"26A Lê Thánh Tôn",g:"https://www.google.com/maps/place//data=!4m2!3m1!1s0x0:0x138de6375e2fd3be",ax:1},
+];
 
+/* ---------- explore ---------- */
+/* Places dataset imported from the Sàigòn Field Guide (markpeou/sai-gon).
+   Shape: n=name, c=categories, d=district code, p=price tier, pr=price range,
+   t=tags, note=description, a=address, g=exact Google Maps link. */
+const PLACE_CATS = [
+  { id: "all", label: "All", icon: Compass },
+  { id: "eat", label: "Eat", icon: Utensils },
+  { id: "drink", label: "Drink", icon: Beer },
+  { id: "cafe", label: "Cafés", icon: Coffee },
+  { id: "shop", label: "Shop", icon: ShoppingBag },
+  { id: "exp", label: "Do", icon: Ticket },
+];
+
+const DIST_NAME = {
+  D1: "District 1", D2: "Thảo Điền · D2", D3: "District 3", D4: "District 4",
+  D5: "D5 & West", BT: "Bình Thạnh", PN: "Phú Nhuận", D7: "D7 · Phú Mỹ Hưng", X: "Around town",
+};
+
+const DIST_FILTERS = [
+  { id: "all", label: "All districts" },
+  { id: "D1", label: "District 1" },
+  { id: "D2", label: "D2 · Thảo Điền" },
+  { id: "D3", label: "District 3" },
+  { id: "D4", label: "District 4" },
+  { id: "D5", label: "D5 · Chợ Lớn & West" },
+  { id: "BT", label: "Bình Thạnh" },
+  { id: "PN", label: "Phú Nhuận" },
+  { id: "D7", label: "D7 · Phú Mỹ Hưng" },
+  { id: "X", label: "Around town" },
+];
+
+const PRICE_FILTERS = [
+  { id: 0, label: "Any price" },
+  { id: 1, label: "₫ Budget" },
+  { id: 2, label: "₫₫ Mid" },
+  { id: 3, label: "₫₫₫ Premium" },
+];
+
+/* Reads naturally in a page heading — "Places to eat in District 1". */
+const CAT_NOUN = {
+  all: "All places",
+  eat: "Places to eat",
+  drink: "Bars & drinks",
+  cafe: "Cafés",
+  shop: "Shops",
+  exp: "Things to do",
+};
+
+/* Fold Vietnamese diacritics so "banh mi" matches "bánh mì". */
+const norm = (s) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/₫/g, "d");
+
+const mapsUrl = (p) =>
+  p.g || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.n + " " + (p.a || "") + " Ho Chi Minh City")}`;
+
+/* ---------- geolocation ---------- */
+/* Straight-line (haversine) distance in km. */
+const kmBetween = (a, b) => {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+};
+
+const fmtKm = (k) => (k < 1 ? `${Math.round(k * 1000)} m` : `${k.toFixed(1)} km`);
+
+/* status: idle | asking | on | denied | unavailable */
+function useGeo() {
+  const [coords, setCoords] = useState(null);
+  const [status, setStatus] = useState("idle");
+
+  const request = () => {
+    if (!navigator.geolocation) { setStatus("unavailable"); return; }
+    setStatus("asking");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setStatus("on");
+      },
+      (err) => setStatus(err && err.code === 1 ? "denied" : "unavailable"),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  };
+
+  const off = () => { setCoords(null); setStatus("idle"); };
+
+  return { coords, status, request, off };
+}
+
+function PlaceCard({ p, dist }) {
+  const cat = p.c[0];
+  const Icon = (PLACE_CATS.find((c) => c.id === cat) || PLACE_CATS[0]).icon;
+  return (
+    <div style={{ background: T.card, borderRadius: 20, padding: 16, border: `1px solid ${T.line}` }}>
+      <div className="flex items-start gap-3">
+        <div style={{ width: 38, height: 38, borderRadius: 13, background: T.jadeSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={17} color={T.jade} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: font.display, fontSize: 16, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>{p.n}</div>
+          <div style={{ fontFamily: font.ui, fontSize: 12, color: T.sub, marginTop: 3 }}>
+            {DIST_NAME[p.d]}{p.a ? ` · ${p.a}` : ""}
+          </div>
+        </div>
+        {dist !== undefined && (
+          <span className="flex items-center gap-1 flex-shrink-0"
+            style={{ background: T.accentSoft, color: "#8A6D25", fontFamily: font.ui, fontSize: 11.5, fontWeight: 700, padding: "5px 9px", borderRadius: 999 }}>
+            <Navigation size={10} />{p.ax ? "~" : ""}{fmtKm(dist)}
+          </span>
+        )}
+      </div>
+      <P style={{ marginTop: 10 }}>{p.note}</P>
+      <div className="flex flex-wrap gap-1.5" style={{ marginTop: 10 }}>
+        {p.t.map((t) => <Tag key={t}>{t}</Tag>)}
+      </div>
+      <div className="flex items-center justify-between" style={{ marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${T.line}` }}>
+        <span style={{ fontFamily: font.ui, fontSize: 12, fontWeight: 600, color: T.sub }}>
+          <span style={{ color: T.accent, letterSpacing: 1 }}>{"₫".repeat(p.p || 1)}</span> · {p.pr}
+        </span>
+        <a href={mapsUrl(p)} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1.5"
+          style={{ fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent, textDecoration: "none", flexShrink: 0 }}>
+          Open in Maps <ExternalLink size={12} />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/* Location status bar — covers every permission state honestly. */
+function LocationBar({ geo }) {
+  if (geo.status === "asking") {
+    return (
+      <div className="flex items-center gap-2.5"
+        style={{ background: T.jadeSoft, borderRadius: 16, padding: "12px 14px" }}>
+        <Navigation size={15} color={T.jade} className="flex-shrink-0" />
+        <P style={{ color: T.jade, flex: 1 }}>Finding you — allow location to sort places by how close they are.</P>
+      </div>
+    );
+  }
+
+  if (geo.status === "on") {
+    return (
+      <div className="flex items-center gap-2.5"
+        style={{ background: T.jadeSoft, borderRadius: 16, padding: "12px 14px" }}>
+        <Navigation size={15} color={T.jade} className="flex-shrink-0" />
+        <P style={{ color: T.jade, flex: 1 }}>Sorted nearest first. Distances are straight-line estimates.</P>
+        <button onClick={geo.off}
+          style={{ background: "none", border: "none", fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent, flexShrink: 0 }}>
+          Turn off
+        </button>
+      </div>
+    );
+  }
+
+  if (geo.status === "denied") {
+    return (
+      <div style={{ background: T.accentSoft, borderRadius: 16, padding: 14 }}>
+        <div className="flex items-start gap-2.5">
+          <Navigation size={15} color="#8A6D25" style={{ flexShrink: 0, marginTop: 2 }} />
+          <P style={{ color: "#6E5720", flex: 1 }}>
+            Location is off, so places aren't sorted by distance. To turn it back on, allow location for this site in
+            your browser settings — then tap below.
+          </P>
+        </div>
+        <button onClick={geo.request}
+          className="flex items-center justify-center gap-2"
+          style={{ width: "100%", marginTop: 12, background: T.ink, color: "#fff", border: "none", borderRadius: 14, padding: "12px 0", fontFamily: font.ui, fontSize: 13.5, fontWeight: 700 }}>
+          <Navigation size={14} /> Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (geo.status === "unavailable") {
+    return (
+      <div className="flex items-start gap-2.5"
+        style={{ background: T.accentSoft, borderRadius: 16, padding: "12px 14px" }}>
+        <AlertTriangle size={15} color="#8A6D25" style={{ flexShrink: 0, marginTop: 2 }} />
+        <P style={{ color: "#6E5720", flex: 1 }}>Couldn't get your location. Everything still works — just not sorted by distance.</P>
+      </div>
+    );
+  }
+
+  /* idle — user turned it off, offer it back */
+  return (
+    <button onClick={geo.request} className="flex items-center gap-2.5"
+      style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 16, padding: "12px 14px", width: "100%", textAlign: "left" }}>
+      <Navigation size={15} color={T.jade} style={{ flexShrink: 0 }} />
+      <P style={{ flex: 1 }}>Sort places by how close they are</P>
+      <span style={{ fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent, flexShrink: 0 }}>Turn on</span>
+    </button>
+  );
+}
+
+function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", heading = "All places", geo }) {
+  const [cat, setCat] = useState(initialCat);
+  const [dist, setDist] = useState(initialDist);
+  const [price, setPrice] = useState(0);
+  const [q, setQ] = useState("");
+  const [limit, setLimit] = useState(24);
+
+  /* Location is on by default — ask once when the browser first opens. */
+  React.useEffect(() => {
+    if (geo.status === "idle") geo.request();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const nearFirst = geo.status === "on" && geo.coords;
+
+  const list = useMemo(() => {
+    const nq = q.trim() ? norm(q.trim()) : "";
+    const out = PLACES.filter((p) =>
+      (cat === "all" || p.c.includes(cat)) &&
+      (dist === "all" || p.d === dist) &&
+      (price === 0 || p.p === price) &&
+      (!nq || norm([p.n, p.note, p.a || "", ...p.t].join(" ")).includes(nq))
+    ).map((p) => ({
+      ...p,
+      _km: nearFirst && p.lat != null && p.lng != null ? kmBetween(geo.coords, p) : undefined,
+    }));
+    if (nearFirst) out.sort((a, b) => (a._km ?? 1e9) - (b._km ?? 1e9));
+    return out;
+  }, [cat, dist, price, q, nearFirst, geo.coords]);
+
+  /* Header reflects what you're actually looking at, and follows the filters.
+     Arriving from a neighbourhood keeps that neighbourhood's own name. */
+  const { title, subtitle } = useMemo(() => {
+    const catNoun = CAT_NOUN[cat] || "All places";
+    const fromHood = dist === initialDist && heading !== "All places" ? heading : null;
+
+    let t;
+    if (dist === "all") {
+      t = catNoun;
+    } else if (cat === "all") {
+      /* No category chosen — the place itself is the headline. */
+      t = fromHood || DIST_NAME[dist];
+    } else {
+      /* Combined: use the short district name so the line stays readable. */
+      t = `${catNoun} in ${DIST_NAME[dist]}`;
+    }
+
+    const bits = [];
+    if (price !== 0) bits.push(PRICE_FILTERS.find((p) => p.id === price).label);
+    if (q.trim()) bits.push(`“${q.trim()}”`);
+    return { title: t, subtitle: bits.join(" · ") };
+  }, [cat, dist, price, q, initialDist, heading]);
+
+  const reset = () => { setCat("all"); setDist("all"); setPrice(0); setQ(""); setLimit(24); };
+  const bump = (fn) => (v) => { fn(v); setLimit(24); };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <button onClick={onBack} className="flex items-center gap-2"
+        style={{ background: "none", border: "none", padding: "4px 0", fontFamily: font.ui, fontSize: 13.5, fontWeight: 700, color: T.jade, alignSelf: "flex-start" }}>
+        <ArrowLeft size={16} /> Explore
+      </button>
+
+      <div>
+        <H size={25} style={{ transition: "opacity 0.2s" }}>{title}</H>
+        {subtitle && <P style={{ marginTop: 4 }}>{subtitle}</P>}
+      </div>
+
+      <LocationBar geo={geo} />
+
+      {/* search */}
+      <div className="flex items-center gap-2"
+        style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 999, padding: "11px 15px" }}>
+        <Search size={15} color={T.sub} style={{ flexShrink: 0 }} />
+        <input value={q} onChange={(e) => { setQ(e.target.value); setLimit(24); }}
+          placeholder="Search places, dishes, vibes…"
+          style={{ border: "none", outline: "none", background: "none", width: "100%", fontFamily: font.ui, fontSize: 14, color: T.ink }} />
+        {q && (
+          <button onClick={() => setQ("")} style={{ background: "none", border: "none", padding: 0, display: "flex" }}>
+            <X size={15} color={T.sub} />
+          </button>
+        )}
+      </div>
+
+      {/* category rail */}
+      <div className="flex gap-2" style={{ overflowX: "auto", paddingBottom: 2, margin: "0 -20px", padding: "0 20px 2px" }}>
+        {PLACE_CATS.map((c) => {
+          const on = cat === c.id;
+          return (
+            <button key={c.id} onClick={() => bump(setCat)(c.id)}
+              className="flex flex-col items-center gap-1.5"
+              style={{
+                flexShrink: 0, minWidth: 66, padding: "10px 12px", borderRadius: 14,
+                background: on ? T.jadeSoft : T.card,
+                border: `1px solid ${on ? "#CFE3DD" : T.line}`,
+                fontFamily: font.ui, fontSize: 11.5, fontWeight: 700,
+                color: on ? T.jade : T.sub,
+              }}>
+              <c.icon size={18} color={on ? T.jade : T.sub} />
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* district pills */}
+      <div className="flex gap-2" style={{ overflowX: "auto", margin: "0 -20px", padding: "0 20px 2px" }}>
+        {DIST_FILTERS.map((d) => {
+          const on = dist === d.id;
+          return (
+            <button key={d.id} onClick={() => bump(setDist)(d.id)}
+              style={{
+                flexShrink: 0, padding: "8px 14px", borderRadius: 999,
+                background: on ? T.ink : T.card, color: on ? "#fff" : T.sub,
+                border: `1px solid ${on ? T.ink : T.line}`,
+                fontFamily: font.ui, fontSize: 12.5, fontWeight: 600,
+              }}>
+              {d.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* price pills */}
+      <div className="flex gap-2" style={{ overflowX: "auto", margin: "0 -20px", padding: "0 20px 2px" }}>
+        {PRICE_FILTERS.map((p) => {
+          const on = price === p.id;
+          return (
+            <button key={p.id} onClick={() => bump(setPrice)(p.id)}
+              style={{
+                flexShrink: 0, padding: "8px 14px", borderRadius: 999,
+                background: on ? T.ink : T.card, color: on ? "#fff" : T.sub,
+                border: `1px solid ${on ? T.ink : T.line}`,
+                fontFamily: font.ui, fontSize: 12.5, fontWeight: 600,
+              }}>
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between" style={{ marginTop: 2 }}>
+        <P style={{ fontSize: 12.5 }}>
+          <span style={{ fontWeight: 700, color: T.ink }}>{list.length}</span> place{list.length !== 1 ? "s" : ""}
+          {nearFirst ? " · nearest first" : ""}
+        </P>
+        {(cat !== "all" || dist !== "all" || price !== 0 || q) && (
+          <button onClick={reset}
+            style={{ background: "none", border: "none", fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent }}>
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {list.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "50px 20px" }}>
+          <div style={{ fontFamily: font.display, fontSize: 18, fontWeight: 600, color: T.ink }}>Nothing matches</div>
+          <P style={{ marginTop: 6 }}>Try clearing a filter, or search for a dish, vibe or district.</P>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {list.slice(0, limit).map((p, i) => <PlaceCard key={p.n + i} p={p} dist={p._km} />)}
+          {list.length > limit && (
+            <button onClick={() => setLimit(limit + 24)}
+              style={{ background: T.ink, color: "#fff", border: "none", borderRadius: 16, padding: "14px 0", fontFamily: font.ui, fontSize: 14, fontWeight: 700, marginTop: 4 }}>
+              Show {Math.min(24, list.length - limit)} more
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExploreScreen({ trip, geo }) {
+  const [view, setView] = useState(null); // null | {type:'hood'|'places', ...}
+
+  if (view && view.type === "places") {
+    return <PlacesBrowser onBack={() => setView(null)} initialDist={view.dist || "all"}
+      initialCat={view.cat || "all"} heading={view.heading || "All places"} geo={geo} />;
+  }
+
+  if (view && view.type === "hood") {
+    const h = HOODS.find((x) => x.name === view.name);
+    const count = PLACES.filter((p) => p.d === h.dist).length;
+    return (
+      <div className="flex flex-col gap-4">
+        <button onClick={() => setView(null)} className="flex items-center gap-2"
+          style={{ background: "none", border: "none", padding: "4px 0", fontFamily: font.ui, fontSize: 13.5, fontWeight: 700, color: T.jade, alignSelf: "flex-start" }}>
+          <ArrowLeft size={16} /> All neighbourhoods
+        </button>
+        <div>
+          <span style={{ fontFamily: font.ui, fontSize: 12, fontWeight: 700, color: "#8A6D25" }}>{h.price}</span>
+          <H size={26} style={{ marginTop: 4 }}>{h.name}</H>
+          <div className="flex gap-2 flex-wrap" style={{ marginTop: 10 }}>
+            {h.tags.map((t) => <Tag key={t}>{t}</Tag>)}
+          </div>
+        </div>
+        <Card>
+          <Eyebrow>The feel</Eyebrow>
+          <P style={{ marginTop: 6 }}>{h.feel}</P>
+        </Card>
+        <Card>
+          <Eyebrow>Stay here if</Eyebrow>
+          <P style={{ marginTop: 6 }}>{h.who}</P>
+        </Card>
+        <Card>
+          <div className="flex items-center gap-1.5">
+            <Utensils size={13} color={T.jade} /><Eyebrow>Eat & drink</Eyebrow>
+          </div>
+          <P style={{ marginTop: 6 }}>{h.eat}</P>
+        </Card>
+        <div style={{ background: T.accentSoft, borderRadius: 18, padding: 14, display: "flex", gap: 10 }}>
+          <AlertTriangle size={15} color="#8A6D25" style={{ flexShrink: 0, marginTop: 2 }} />
+          <P style={{ color: "#6E5720" }}>{h.watch}</P>
+        </div>
+        {count > 0 && (
+          <button onClick={() => setView({ type: "places", dist: h.dist, heading: h.name })}
+            className="flex items-center justify-center gap-2"
+            style={{ background: T.ink, color: "#fff", border: "none", borderRadius: 18, padding: "15px 0", fontFamily: font.ui, fontSize: 14.5, fontWeight: 700 }}>
+            See {count} places here <ArrowRight size={16} />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  /* ---- overview: neighbourhoods first, then the full guide ---- */
   return (
     <div className="flex flex-col gap-4">
       <div>
         <Eyebrow>Explore</Eyebrow>
-        <H size={26}>Where you stay shapes the trip.</H>
+        <H size={26}>Start with where you'll stay.</H>
+        <P style={{ marginTop: 8 }}>Read the neighbourhoods first — then dive into {PLACES.length} places across the city.</P>
       </div>
 
-      <P>Ho Chi Minh City has neighbourhoods for every traveller — find the right one.</P>
-
-      {HOODS.map((h) => {
-        const open = openHood === h.name;
-        return (
-          <Card key={h.name} onClick={() => setOpenHood(open ? null : h.name)}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MapPin size={15} color={T.accent} />
-                <span style={{ fontFamily: font.display, fontSize: 16.5, fontWeight: 600, color: T.ink }}>{h.name}</span>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span style={{ fontFamily: font.ui, fontSize: 12, fontWeight: 700, color: T.gold }}>{h.price}</span>
-                <ChevronDown size={15} color={T.sub} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-              </div>
-            </div>
-            <div className="flex gap-2 flex-wrap" style={{ margin: "8px 0 0" }}>
-              {h.tags.map((t) => <Tag key={t}>{t}</Tag>)}
-            </div>
-            {open && (
-              <div style={{ marginTop: 12, borderTop: `1px solid ${T.line}`, paddingTop: 12 }} className="flex flex-col gap-3">
-                <div>
-                  <Eyebrow>The feel</Eyebrow>
-                  <P style={{ marginTop: 3 }}>{h.feel}</P>
-                </div>
-                <div>
-                  <Eyebrow>Stay here if</Eyebrow>
-                  <P style={{ marginTop: 3 }}>{h.who}</P>
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <Utensils size={12} color={T.jade} /><Eyebrow>Eat & drink</Eyebrow>
+      <div>
+        <Eyebrow>Neighbourhoods</Eyebrow>
+        <div className="flex flex-col gap-2" style={{ marginTop: 8 }}>
+          {HOODS.map((h) => (
+            <Card key={h.name} onClick={() => setView({ type: "hood", name: h.name })} style={{ padding: 16 }}>
+              <div className="flex items-center justify-between">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="flex items-center gap-2">
+                    <MapPin size={14} color={T.jade} style={{ flexShrink: 0 }} />
+                    <span style={{ fontFamily: font.display, fontSize: 16, fontWeight: 600, color: T.ink }}>{h.name}</span>
                   </div>
-                  <P style={{ marginTop: 3 }}>{h.eat}</P>
+                  <P style={{ fontSize: 12.5, marginTop: 4 }}>{h.tags.join(" · ")}</P>
                 </div>
-                <div style={{ background: T.accentSoft, borderRadius: 12, padding: 10 }}>
-                  <P style={{ color: "#8A3A22", fontSize: 12.5 }}>{h.watch}</P>
+                <div className="flex items-center gap-2 flex-shrink-0" style={{ marginLeft: 10 }}>
+                  <span style={{ fontFamily: font.ui, fontSize: 12, fontWeight: 700, color: "#8A6D25" }}>{h.price}</span>
+                  <ChevronRight size={15} color={T.sub} />
                 </div>
               </div>
-            )}
-          </Card>
-        );
-      })}
+            </Card>
+          ))}
+        </div>
+      </div>
 
+      <div>
+        <Eyebrow>Browse the city</Eyebrow>
+        <button onClick={() => setView({ type: "places", heading: "All places" })}
+          className="flex items-center justify-between"
+          style={{ width: "100%", background: T.jade, borderRadius: 22, padding: 18, border: "none", marginTop: 8, textAlign: "left" }}>
+          <div>
+            <div style={{ fontFamily: font.display, fontSize: 19, fontWeight: 600, color: "#fff" }}>All {PLACES.length} places</div>
+            <div style={{ fontFamily: font.ui, fontSize: 12.5, color: "#B9CEC4", marginTop: 4 }}>Search and filter by category, district and price</div>
+          </div>
+          <ChevronRight size={18} color={T.accent} />
+        </button>
 
+        <div className="grid grid-cols-2 gap-2" style={{ marginTop: 8 }}>
+          {PLACE_CATS.filter((c) => c.id !== "all").map((c) => {
+            const n = PLACES.filter((p) => p.c.includes(c.id)).length;
+            return (
+              <Card key={c.id} onClick={() => setView({ type: "places", cat: c.id, heading: c.label })} style={{ padding: 16 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 13, background: T.jadeSoft, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <c.icon size={17} color={T.jade} />
+                </div>
+                <div style={{ fontFamily: font.ui, fontSize: 14, fontWeight: 700, color: T.ink, marginTop: 10 }}>{c.label}</div>
+                <P style={{ fontSize: 12 }}>{n} places</P>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -909,6 +1775,7 @@ export default function TravelPal() {
   const [docs, setDocs] = useState({ passport: true });
   const [flight, setFlight] = useState(null);
   const [toastMsg, setToastMsg] = useState("");
+  const geo = useGeo();
 
   const toast = (msg) => {
     setToastMsg(msg);
@@ -929,45 +1796,49 @@ export default function TravelPal() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#DDE1DA", display: "flex", justifyContent: "center", alignItems: "center", padding: 16, fontFamily: font.ui }}>
+    <div style={{ minHeight: "100dvh", background: T.bg, fontFamily: font.ui, display: "flex", justifyContent: "center" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Instrument+Sans:wght@400;500;600;700&display=swap');
+        html, body { margin: 0; background: ${T.bg}; }
         *::-webkit-scrollbar { display: none; }
         input::placeholder { color: #9AA6A1; }
         button { cursor: pointer; }
       `}</style>
 
       <div style={{
-        width: 390, height: 812, background: T.bg, borderRadius: 44, overflow: "hidden",
-        position: "relative", boxShadow: "0 30px 80px rgba(13,59,52,0.25)", border: "1px solid rgba(0,0,0,0.06)",
+        width: "100%", maxWidth: 480, minHeight: "100dvh", background: T.bg,
+        position: "relative", display: "flex", flexDirection: "column",
       }}>
         {!trip ? (
-          <Onboarding onDone={(t) => { setTrip(t); setTab("home"); }} />
+          <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+            <Onboarding onDone={(t) => { setTrip(t); setTab(t.mode === "guide" ? "explore" : "home"); }} />
+          </div>
         ) : (
           <>
-            <div className="flex items-center justify-between" style={{ padding: "16px 26px 8px", fontFamily: font.ui, fontSize: 13, fontWeight: 600, color: T.ink }}>
-              <span>9:41</span>
-              <span style={{ fontFamily: font.display, fontStyle: "italic", fontSize: 14, color: T.jade }}>travelpal ▲ việt nam</span>
+            <div className="flex items-center justify-between" style={{ padding: "16px 22px 8px", fontFamily: font.ui, fontSize: 13, fontWeight: 600, color: T.ink, position: "sticky", top: 0, background: T.bg, zIndex: 20 }}>
+              <span style={{ fontFamily: font.display, fontStyle: "italic", fontSize: 15, color: T.jade }}>travelpal ▲ việt nam</span>
               <button onClick={() => setTrip(null)} title="Edit trip"
                 style={{ background: "none", border: "none", padding: 0, display: "flex" }}>
                 <Settings2 size={16} color={T.sub} />
               </button>
             </div>
 
-            <div style={{ height: "calc(100% - 118px)", overflowY: "auto", padding: "10px 20px 24px" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "10px 20px 110px" }}>
               {tab === "home" && <HomeScreen trip={trip} go={setTab} visaDone={visaDone} flight={flight} setFlight={setFlight} toast={toast} />}
               {tab === "visa" && <VisaScreen trip={trip} steps={steps} toggleStep={toggleStep} docs={docs} addDoc={addDoc} toast={toast} />}
               {tab === "arrive" && <ArriveScreen />}
-              {tab === "explore" && <ExploreScreen trip={trip} />}
+              {tab === "explore" && <ExploreScreen trip={trip} geo={geo} />}
               {tab === "pack" && <PackScreen trip={trip} />}
             </div>
 
             <Toast msg={toastMsg} />
 
             <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0, height: 78,
+              position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+              width: "100%", maxWidth: 480, height: 78,
               background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)",
               borderTop: `1px solid ${T.line}`, display: "flex", alignItems: "flex-start", paddingTop: 10,
+              zIndex: 30,
             }}>
               {tabs.map((t) => (
                 <button key={t.id} onClick={() => setTab(t.id)} className="flex-1 flex flex-col items-center gap-1"
