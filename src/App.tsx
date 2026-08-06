@@ -9,6 +9,7 @@ import {
   Coffee, Beer, ShoppingBag, Landmark, ArrowLeft, Search, X, Ticket, Navigation
 } from "lucide-react";
 
+
 /* ---------- design tokens ---------- */
 const T = {
   bg: "#F5F6F3",
@@ -1281,7 +1282,13 @@ const kmBetween = (a, b) => {
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 };
 
-const fmtKm = (k) => (k < 1 ? `${Math.round(k * 1000)} m` : `${k.toFixed(1)} km`);
+const fmtKm = (k, units = "km") => {
+  if (units === "mi") {
+    const mi = k * 0.621371;
+    return mi < 0.1 ? `${Math.round(mi * 5280)} ft` : `${mi.toFixed(1)} mi`;
+  }
+  return k < 1 ? `${Math.round(k * 1000)} m` : `${k.toFixed(1)} km`;
+};
 
 /* status: idle | asking | on | denied | unavailable */
 function useGeo() {
@@ -1306,7 +1313,7 @@ function useGeo() {
   return { coords, status, request, off };
 }
 
-function PlaceCard({ p, dist }) {
+function PlaceCard({ p, dist, units }) {
   const cat = p.c[0];
   const Icon = (PLACE_CATS.find((c) => c.id === cat) || PLACE_CATS[0]).icon;
   return (
@@ -1324,7 +1331,7 @@ function PlaceCard({ p, dist }) {
         {dist !== undefined && (
           <span className="flex items-center gap-1 flex-shrink-0"
             style={{ background: T.accentSoft, color: "#8A6D25", fontFamily: font.ui, fontSize: 11.5, fontWeight: 700, padding: "5px 9px", borderRadius: 999 }}>
-            <Navigation size={10} />{p.ax ? "~" : ""}{fmtKm(dist)}
+            <Navigation size={10} />~{fmtKm(dist, units)}
           </span>
         )}
       </div>
@@ -1346,73 +1353,7 @@ function PlaceCard({ p, dist }) {
   );
 }
 
-/* Location status bar — covers every permission state honestly. */
-function LocationBar({ geo }) {
-  if (geo.status === "asking") {
-    return (
-      <div className="flex items-center gap-2.5"
-        style={{ background: T.jadeSoft, borderRadius: 16, padding: "12px 14px" }}>
-        <Navigation size={15} color={T.jade} className="flex-shrink-0" />
-        <P style={{ color: T.jade, flex: 1 }}>Finding you — allow location to sort places by how close they are.</P>
-      </div>
-    );
-  }
-
-  if (geo.status === "on") {
-    return (
-      <div className="flex items-center gap-2.5"
-        style={{ background: T.jadeSoft, borderRadius: 16, padding: "12px 14px" }}>
-        <Navigation size={15} color={T.jade} className="flex-shrink-0" />
-        <P style={{ color: T.jade, flex: 1 }}>Sorted nearest first. Distances are straight-line estimates.</P>
-        <button onClick={geo.off}
-          style={{ background: "none", border: "none", fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent, flexShrink: 0 }}>
-          Turn off
-        </button>
-      </div>
-    );
-  }
-
-  if (geo.status === "denied") {
-    return (
-      <div style={{ background: T.accentSoft, borderRadius: 16, padding: 14 }}>
-        <div className="flex items-start gap-2.5">
-          <Navigation size={15} color="#8A6D25" style={{ flexShrink: 0, marginTop: 2 }} />
-          <P style={{ color: "#6E5720", flex: 1 }}>
-            Location is off, so places aren't sorted by distance. To turn it back on, allow location for this site in
-            your browser settings — then tap below.
-          </P>
-        </div>
-        <button onClick={geo.request}
-          className="flex items-center justify-center gap-2"
-          style={{ width: "100%", marginTop: 12, background: T.ink, color: "#fff", border: "none", borderRadius: 14, padding: "12px 0", fontFamily: font.ui, fontSize: 13.5, fontWeight: 700 }}>
-          <Navigation size={14} /> Try again
-        </button>
-      </div>
-    );
-  }
-
-  if (geo.status === "unavailable") {
-    return (
-      <div className="flex items-start gap-2.5"
-        style={{ background: T.accentSoft, borderRadius: 16, padding: "12px 14px" }}>
-        <AlertTriangle size={15} color="#8A6D25" style={{ flexShrink: 0, marginTop: 2 }} />
-        <P style={{ color: "#6E5720", flex: 1 }}>Couldn't get your location. Everything still works — just not sorted by distance.</P>
-      </div>
-    );
-  }
-
-  /* idle — user turned it off, offer it back */
-  return (
-    <button onClick={geo.request} className="flex items-center gap-2.5"
-      style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 16, padding: "12px 14px", width: "100%", textAlign: "left" }}>
-      <Navigation size={15} color={T.jade} style={{ flexShrink: 0 }} />
-      <P style={{ flex: 1 }}>Sort places by how close they are</P>
-      <span style={{ fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent, flexShrink: 0 }}>Turn on</span>
-    </button>
-  );
-}
-
-function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", heading = "All places", geo }) {
+function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", heading = "All places", geo, units, openSettings }) {
   const [cat, setCat] = useState(initialCat);
   const [dist, setDist] = useState(initialDist);
   const [price, setPrice] = useState(0);
@@ -1480,7 +1421,6 @@ function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", headin
         {subtitle && <P style={{ marginTop: 4 }}>{subtitle}</P>}
       </div>
 
-      <LocationBar geo={geo} />
 
       {/* search */}
       <div className="flex items-center gap-2"
@@ -1517,47 +1457,41 @@ function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", headin
         })}
       </div>
 
-      {/* district pills */}
-      <div className="flex gap-2" style={{ overflowX: "auto", margin: "0 -20px", padding: "0 20px 2px" }}>
-        {DIST_FILTERS.map((d) => {
-          const on = dist === d.id;
-          return (
-            <button key={d.id} onClick={() => bump(setDist)(d.id)}
+      {/* district + price: two inline dropdowns */}
+      <div className="flex gap-2">
+        {[
+          { value: dist, set: bump(setDist), opts: DIST_FILTERS.map((d) => [d.id, d.label]), active: dist !== "all" },
+          { value: price, set: (v) => bump(setPrice)(Number(v)), opts: PRICE_FILTERS.map((p) => [p.id, p.label]), active: price !== 0 },
+        ].map((sel, i) => (
+          <div key={i} style={{ position: "relative", flex: 1 }}>
+            <select value={sel.value} onChange={(e) => sel.set(e.target.value)}
               style={{
-                flexShrink: 0, padding: "8px 14px", borderRadius: 999,
-                background: on ? T.ink : T.card, color: on ? "#fff" : T.sub,
-                border: `1px solid ${on ? T.ink : T.line}`,
-                fontFamily: font.ui, fontSize: 12.5, fontWeight: 600,
+                width: "100%", appearance: "none", WebkitAppearance: "none",
+                background: sel.active ? T.ink : T.card, color: sel.active ? "#fff" : T.ink,
+                border: `1px solid ${sel.active ? T.ink : T.line}`, borderRadius: 999,
+                padding: "10px 34px 10px 15px", fontFamily: font.ui, fontSize: 13, fontWeight: 600,
               }}>
-              {d.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* price pills */}
-      <div className="flex gap-2" style={{ overflowX: "auto", margin: "0 -20px", padding: "0 20px 2px" }}>
-        {PRICE_FILTERS.map((p) => {
-          const on = price === p.id;
-          return (
-            <button key={p.id} onClick={() => bump(setPrice)(p.id)}
-              style={{
-                flexShrink: 0, padding: "8px 14px", borderRadius: 999,
-                background: on ? T.ink : T.card, color: on ? "#fff" : T.sub,
-                border: `1px solid ${on ? T.ink : T.line}`,
-                fontFamily: font.ui, fontSize: 12.5, fontWeight: 600,
-              }}>
-              {p.label}
-            </button>
-          );
-        })}
+              {sel.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <ChevronDown size={14} color={sel.active ? "#fff" : T.sub}
+              style={{ position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+          </div>
+        ))}
       </div>
 
       <div className="flex items-center justify-between" style={{ marginTop: 2 }}>
-        <P style={{ fontSize: 12.5 }}>
-          <span style={{ fontWeight: 700, color: T.ink }}>{list.length}</span> place{list.length !== 1 ? "s" : ""}
-          {nearFirst ? " · nearest first" : ""}
-        </P>
+        <div className="flex items-center gap-2">
+          <P style={{ fontSize: 12.5 }}>
+            <span style={{ fontWeight: 700, color: T.ink }}>{list.length}</span> place{list.length !== 1 ? "s" : ""}
+            {nearFirst ? " · nearest first" : ""}
+          </P>
+          {!nearFirst && geo.status !== "asking" && (
+            <button onClick={openSettings} className="flex items-center gap-1"
+              style={{ background: "none", border: "none", padding: 0, fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent }}>
+              <Navigation size={11} /> Sort by distance
+            </button>
+          )}
+        </div>
         {(cat !== "all" || dist !== "all" || price !== 0 || q) && (
           <button onClick={reset}
             style={{ background: "none", border: "none", fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.accent }}>
@@ -1573,7 +1507,7 @@ function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", headin
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {list.slice(0, limit).map((p, i) => <PlaceCard key={p.n + i} p={p} dist={p._km} />)}
+          {list.slice(0, limit).map((p, i) => <PlaceCard key={p.n + i} p={p} dist={p._km} units={units} />)}
           {list.length > limit && (
             <button onClick={() => setLimit(limit + 24)}
               style={{ background: T.ink, color: "#fff", border: "none", borderRadius: 16, padding: "14px 0", fontFamily: font.ui, fontSize: 14, fontWeight: 700, marginTop: 4 }}>
@@ -1586,12 +1520,12 @@ function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", headin
   );
 }
 
-function ExploreScreen({ trip, geo }) {
+function ExploreScreen({ trip, geo, units, openSettings }) {
   const [view, setView] = useState(null); // null | {type:'hood'|'places', ...}
 
   if (view && view.type === "places") {
     return <PlacesBrowser onBack={() => setView(null)} initialDist={view.dist || "all"}
-      initialCat={view.cat || "all"} heading={view.heading || "All places"} geo={geo} />;
+      initialCat={view.cat || "all"} heading={view.heading || "All places"} geo={geo} units={units} openSettings={openSettings} />;
   }
 
   if (view && view.type === "hood") {
@@ -1767,6 +1701,97 @@ function PackScreen({ trip }) {
   );
 }
 
+/* ---------- settings sheet ---------- */
+function SettingsSheet({ open, onClose, geo, units, setUnits, onEditTrip }) {
+  if (!open) return null;
+  const Row = ({ children }) => (
+    <div style={{ padding: "16px 0", borderBottom: `1px solid ${T.line}` }}>{children}</div>
+  );
+  return (
+    <>
+      <div onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(21,32,29,0.45)", zIndex: 40 }} />
+      <div style={{
+        position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: 0, width: "100%", maxWidth: 480,
+        background: T.bg, borderRadius: "26px 26px 0 0", padding: "10px 22px 34px", zIndex: 41,
+      }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: T.line, margin: "0 auto 14px" }} />
+        <div className="flex items-center justify-between">
+          <H size={21}>Settings</H>
+          <button onClick={onClose} style={{ background: "none", border: "none", padding: 4, display: "flex" }}>
+            <X size={18} color={T.sub} />
+          </button>
+        </div>
+
+        {/* location */}
+        <Row>
+          <div className="flex items-center justify-between gap-3">
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: font.ui, fontSize: 14.5, fontWeight: 700, color: T.ink }}>Sort places by distance</div>
+              <P style={{ fontSize: 12.5, marginTop: 3 }}>
+                {geo.status === "on" && "On — nearest places come first in Explore."}
+                {geo.status === "asking" && "Waiting for permission…"}
+                {geo.status === "denied" && "Blocked by your browser. Allow location for this site in browser settings, then try again."}
+                {geo.status === "unavailable" && "Location isn't available on this device."}
+                {geo.status === "idle" && "Off — places show in their usual order."}
+              </P>
+            </div>
+            {geo.status === "on" ? (
+              <button onClick={geo.off}
+                style={{ background: T.jade, border: "none", borderRadius: 999, width: 48, height: 28, position: "relative", flexShrink: 0 }}>
+                <span style={{ position: "absolute", top: 3, right: 3, width: 22, height: 22, borderRadius: "50%", background: "#fff" }} />
+              </button>
+            ) : (
+              <button onClick={geo.request} disabled={geo.status === "asking"}
+                style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 999, width: 48, height: 28, position: "relative", flexShrink: 0, opacity: geo.status === "asking" ? 0.5 : 1 }}>
+                <span style={{ position: "absolute", top: 3, left: 3, width: 22, height: 22, borderRadius: "50%", background: T.sub }} />
+              </button>
+            )}
+          </div>
+          {geo.status === "denied" && (
+            <button onClick={geo.request}
+              style={{ marginTop: 10, background: T.ink, color: "#fff", border: "none", borderRadius: 12, padding: "10px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700 }}>
+              Try again
+            </button>
+          )}
+        </Row>
+
+        {/* units */}
+        <Row>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div style={{ fontFamily: font.ui, fontSize: 14.5, fontWeight: 700, color: T.ink }}>Distances</div>
+              <P style={{ fontSize: 12.5, marginTop: 3 }}>How far away places are shown.</P>
+            </div>
+            <div className="flex" style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 999, padding: 3 }}>
+              {["km", "mi"].map((u) => (
+                <button key={u} onClick={() => setUnits(u)}
+                  style={{
+                    border: "none", borderRadius: 999, padding: "6px 16px",
+                    background: units === u ? T.ink : "transparent", color: units === u ? "#fff" : T.sub,
+                    fontFamily: font.ui, fontSize: 12.5, fontWeight: 700,
+                  }}>
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Row>
+
+        {/* edit trip */}
+        <button onClick={onEditTrip} className="flex items-center justify-between"
+          style={{ width: "100%", background: "none", border: "none", padding: "16px 0", textAlign: "left" }}>
+          <div>
+            <div style={{ fontFamily: font.ui, fontSize: 14.5, fontWeight: 700, color: T.ink }}>Edit my trip</div>
+            <P style={{ fontSize: 12.5, marginTop: 3 }}>Change destination or start over.</P>
+          </div>
+          <ChevronRight size={16} color={T.sub} />
+        </button>
+      </div>
+    </>
+  );
+}
+
 /* ---------- shell ---------- */
 export default function TravelPal() {
   const [trip, setTrip] = useState(null);
@@ -1776,6 +1801,8 @@ export default function TravelPal() {
   const [flight, setFlight] = useState(null);
   const [toastMsg, setToastMsg] = useState("");
   const geo = useGeo();
+  const [units, setUnits] = useState("km");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const toast = (msg) => {
     setToastMsg(msg);
@@ -1817,7 +1844,7 @@ export default function TravelPal() {
           <>
             <div className="flex items-center justify-between" style={{ padding: "16px 22px 8px", fontFamily: font.ui, fontSize: 13, fontWeight: 600, color: T.ink, position: "sticky", top: 0, background: T.bg, zIndex: 20 }}>
               <span style={{ fontFamily: font.display, fontStyle: "italic", fontSize: 15, color: T.jade }}>travelpal ▲ việt nam</span>
-              <button onClick={() => setTrip(null)} title="Edit trip"
+              <button onClick={() => setSettingsOpen(true)} title="Settings"
                 style={{ background: "none", border: "none", padding: 0, display: "flex" }}>
                 <Settings2 size={16} color={T.sub} />
               </button>
@@ -1827,11 +1854,15 @@ export default function TravelPal() {
               {tab === "home" && <HomeScreen trip={trip} go={setTab} visaDone={visaDone} flight={flight} setFlight={setFlight} toast={toast} />}
               {tab === "visa" && <VisaScreen trip={trip} steps={steps} toggleStep={toggleStep} docs={docs} addDoc={addDoc} toast={toast} />}
               {tab === "arrive" && <ArriveScreen />}
-              {tab === "explore" && <ExploreScreen trip={trip} geo={geo} />}
+              {tab === "explore" && <ExploreScreen trip={trip} geo={geo} units={units} openSettings={() => setSettingsOpen(true)} />}
               {tab === "pack" && <PackScreen trip={trip} />}
             </div>
 
             <Toast msg={toastMsg} />
+
+            <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)}
+              geo={geo} units={units} setUnits={setUnits}
+              onEditTrip={() => { setSettingsOpen(false); setTrip(null); }} />
 
             <div style={{
               position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
