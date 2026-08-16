@@ -1292,13 +1292,33 @@ const fmtKm = (k, units = "km") => {
 
 /* status: idle | asking | on | denied | unavailable */
 /* Base location: what "nearby" is measured from. Live is a fresh GPS read
-   every time it's turned on; home/hotel are a single GPS read captured once
-   (while the user is actually standing there) and kept until cleared. */
+   every time it's turned on; home/hotel are a single point captured once
+   (either a GPS read while standing there, or a typed address) and kept
+   until cleared. */
 const BASE_TYPES = [
   { id: "live", label: "Live" },
   { id: "home", label: "Home" },
   { id: "hotel", label: "My hotel" },
 ];
+
+/* Address -> coordinates via OpenStreetMap's free Nominatim search — no
+   API key, biased to Vietnam since that's the only country this app covers. */
+const shortAddress = (label) => (label ? label.split(",").slice(0, 2).join(",").trim() : null);
+
+async function geocodeAddress(query) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=vn&q=${encodeURIComponent(query)}`;
+  let res;
+  try {
+    res = await fetch(url, { headers: { Accept: "application/json" } });
+  } catch {
+    throw new Error("network");
+  }
+  if (!res.ok) throw new Error("network");
+  const results = await res.json();
+  if (!results.length) throw new Error("no_match");
+  const r = results[0];
+  return { lat: parseFloat(r.lat), lng: parseFloat(r.lon), label: r.display_name };
+}
 
 function useBaseLocation() {
   const [type, setType] = useState(() => {
@@ -1309,6 +1329,8 @@ function useBaseLocation() {
   const [fixed, setFixed] = useState(() => {
     try { return JSON.parse(localStorage.getItem("tp_base_fixed") || "{}"); } catch { return {}; }
   });
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState(null);
 
   const persistFixed = (next) => {
     setFixed(next);
@@ -1317,6 +1339,7 @@ function useBaseLocation() {
 
   const chooseType = (t) => {
     setType(t);
+    setGeocodeError(null);
     try { localStorage.setItem("tp_base_type", t); } catch {}
     setStatus(t === "live" ? (liveCoords ? "on" : "idle") : (fixed[t] ? "on" : "idle"));
   };
@@ -1325,6 +1348,7 @@ function useBaseLocation() {
      live point; for "home"/"hotel" it's saved once as that fixed point. */
   const capture = () => {
     if (!navigator.geolocation) { setStatus("unavailable"); return; }
+    setGeocodeError(null);
     setStatus("asking");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -1338,7 +1362,30 @@ function useBaseLocation() {
     );
   };
 
+  /* Home/hotel only: look up a typed address instead of standing there. */
+  const saveAddress = async (query) => {
+    if (type === "live" || !query.trim()) return false;
+    setGeocoding(true);
+    setGeocodeError(null);
+    try {
+      const point = await geocodeAddress(query.trim());
+      persistFixed({ ...fixed, [type]: point });
+      setStatus("on");
+      return true;
+    } catch (e) {
+      setGeocodeError(
+        e.message === "no_match"
+          ? "Couldn't find that address — try adding more detail (street, district)."
+          : "Search failed — check your connection and try again."
+      );
+      return false;
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   const clear = () => {
+    setGeocodeError(null);
     if (type === "live") { setLiveCoords(null); setStatus("idle"); return; }
     const next = { ...fixed };
     delete next[type];
@@ -1348,7 +1395,7 @@ function useBaseLocation() {
 
   const coords = type === "live" ? liveCoords : fixed[type] || null;
 
-  return { type, status, coords, fixed, chooseType, capture, clear };
+  return { type, status, coords, fixed, chooseType, capture, clear, saveAddress, geocoding, geocodeError };
 }
 
 function PlaceCard({ p, dist, units }) {
@@ -1757,6 +1804,7 @@ function PackScreen({ trip }) {
 
 /* ---------- settings sheet ---------- */
 function SettingsSheet({ open, onClose, geo, units, setUnits, onEditTrip }) {
+  const [addressDraft, setAddressDraft] = useState("");
   if (!open) return null;
   const Row = ({ children }) => (
     <div style={{ padding: "16px 0", borderBottom: `1px solid ${T.line}` }}>{children}</div>
@@ -1821,8 +1869,8 @@ function SettingsSheet({ open, onClose, geo, units, setUnits, onEditTrip }) {
               <>
                 <P style={{ fontSize: 12.5 }}>
                   {geo.fixed[geo.type]
-                    ? `Set — nearest places to your ${geo.type === "home" ? "home" : "hotel"} come first in Explore.`
-                    : `Not set yet. Stand at your ${geo.type === "home" ? "home" : "hotel"} and save it once.`}
+                    ? `Set${geo.fixed[geo.type].label ? ` — “${shortAddress(geo.fixed[geo.type].label)}”` : ""} — nearest places come first in Explore.`
+                    : `Not set yet. Stand at your ${geo.type === "home" ? "home" : "hotel"} and save it once, or enter its address below.`}
                 </P>
                 <div className="flex gap-2" style={{ marginTop: 8 }}>
                   <button onClick={geo.capture} disabled={geo.status === "asking"}
@@ -1838,6 +1886,38 @@ function SettingsSheet({ open, onClose, geo, units, setUnits, onEditTrip }) {
                 </div>
                 {geo.status === "denied" && <P style={{ fontSize: 12, marginTop: 6, color: "#B23A3A" }}>Blocked by your browser. Allow location for this site, then try again.</P>}
                 {geo.status === "unavailable" && <P style={{ fontSize: 12, marginTop: 6, color: "#B23A3A" }}>Location isn't available on this device.</P>}
+
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.line}` }}>
+                  <div style={{ fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.sub }}>Or enter an address</div>
+                  <div className="flex gap-2" style={{ marginTop: 6 }}>
+                    <input
+                      value={addressDraft}
+                      onChange={(e) => setAddressDraft(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key !== "Enter") return;
+                        e.preventDefault();
+                        if (await geo.saveAddress(addressDraft)) setAddressDraft("");
+                      }}
+                      placeholder={`e.g. 42 Nguyễn Huệ, District 1`}
+                      style={{
+                        flex: 1, minWidth: 0, background: T.card, border: `1px solid ${T.line}`, borderRadius: 12,
+                        padding: "10px 12px", fontFamily: font.ui, fontSize: 13.5, color: T.ink, outline: "none",
+                      }}
+                    />
+                    <button
+                      onClick={async () => { if (await geo.saveAddress(addressDraft)) setAddressDraft(""); }}
+                      disabled={geo.geocoding || !addressDraft.trim()}
+                      style={{
+                        flexShrink: 0, background: T.ink, color: "#fff", border: "none", borderRadius: 12,
+                        padding: "10px 14px", fontFamily: font.ui, fontSize: 13, fontWeight: 700,
+                        opacity: geo.geocoding || !addressDraft.trim() ? 0.5 : 1,
+                      }}>
+                      {geo.geocoding ? "Searching…" : "Save"}
+                    </button>
+                  </div>
+                  {geo.geocodeError && <P style={{ fontSize: 12, marginTop: 6, color: "#B23A3A" }}>{geo.geocodeError}</P>}
+                  <P style={{ fontSize: 11, marginTop: 6 }}>Address search by OpenStreetMap.</P>
+                </div>
               </>
             )}
           </div>
