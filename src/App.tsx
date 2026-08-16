@@ -1291,16 +1291,46 @@ const fmtKm = (k, units = "km") => {
 };
 
 /* status: idle | asking | on | denied | unavailable */
-function useGeo() {
-  const [coords, setCoords] = useState(null);
-  const [status, setStatus] = useState("idle");
+/* Base location: what "nearby" is measured from. Live is a fresh GPS read
+   every time it's turned on; home/hotel are a single GPS read captured once
+   (while the user is actually standing there) and kept until cleared. */
+const BASE_TYPES = [
+  { id: "live", label: "Live" },
+  { id: "home", label: "Home" },
+  { id: "hotel", label: "My hotel" },
+];
 
-  const request = () => {
+function useBaseLocation() {
+  const [type, setType] = useState(() => {
+    try { return localStorage.getItem("tp_base_type") || "live"; } catch { return "live"; }
+  });
+  const [status, setStatus] = useState("idle");
+  const [liveCoords, setLiveCoords] = useState(null);
+  const [fixed, setFixed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("tp_base_fixed") || "{}"); } catch { return {}; }
+  });
+
+  const persistFixed = (next) => {
+    setFixed(next);
+    try { localStorage.setItem("tp_base_fixed", JSON.stringify(next)); } catch {}
+  };
+
+  const chooseType = (t) => {
+    setType(t);
+    try { localStorage.setItem("tp_base_type", t); } catch {}
+    setStatus(t === "live" ? (liveCoords ? "on" : "idle") : (fixed[t] ? "on" : "idle"));
+  };
+
+  /* Reads the device's current GPS position. For "live" that becomes the
+     live point; for "home"/"hotel" it's saved once as that fixed point. */
+  const capture = () => {
     if (!navigator.geolocation) { setStatus("unavailable"); return; }
     setStatus("asking");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if (type === "live") setLiveCoords(c);
+        else persistFixed({ ...fixed, [type]: c });
         setStatus("on");
       },
       (err) => setStatus(err && err.code === 1 ? "denied" : "unavailable"),
@@ -1308,9 +1338,17 @@ function useGeo() {
     );
   };
 
-  const off = () => { setCoords(null); setStatus("idle"); };
+  const clear = () => {
+    if (type === "live") { setLiveCoords(null); setStatus("idle"); return; }
+    const next = { ...fixed };
+    delete next[type];
+    persistFixed(next);
+    setStatus("idle");
+  };
 
-  return { coords, status, request, off };
+  const coords = type === "live" ? liveCoords : fixed[type] || null;
+
+  return { type, status, coords, fixed, chooseType, capture, clear };
 }
 
 function PlaceCard({ p, dist, units }) {
@@ -1360,9 +1398,10 @@ function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", headin
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(24);
 
-  /* Location is on by default — ask once when the browser first opens. */
+  /* Live location is on by default — ask once when the browser first opens.
+     Home/hotel are only ever captured by an explicit tap in Settings. */
   React.useEffect(() => {
-    if (geo.status === "idle") geo.request();
+    if (geo.type === "live" && geo.status === "idle") geo.capture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1582,6 +1621,21 @@ function ExploreScreen({ trip, geo, units, openSettings }) {
         <P style={{ marginTop: 8 }}>Read the neighbourhoods first — then dive into {PLACES.length} places across the city.</P>
       </div>
 
+      <button onClick={() => setView({ type: "places", heading: "All places" })}
+        className="flex items-center justify-between"
+        style={{ width: "100%", background: T.card, border: `1px solid ${T.line}`, borderRadius: 18, padding: "14px 16px", textAlign: "left" }}>
+        <div className="flex items-center gap-3">
+          <div style={{ width: 36, height: 36, borderRadius: 12, background: T.jadeSoft, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Compass size={17} color={T.jade} />
+          </div>
+          <div>
+            <div style={{ fontFamily: font.ui, fontSize: 14, fontWeight: 700, color: T.ink }}>Explore freely</div>
+            <P style={{ fontSize: 12, marginTop: 2 }}>Skip ahead — search and filter all {PLACES.length} places now.</P>
+          </div>
+        </div>
+        <ChevronRight size={16} color={T.sub} style={{ flexShrink: 0 }} />
+      </button>
+
       <div>
         <Eyebrow>Neighbourhoods</Eyebrow>
         <div className="flex flex-col gap-2" style={{ marginTop: 8 }}>
@@ -1723,37 +1777,70 @@ function SettingsSheet({ open, onClose, geo, units, setUnits, onEditTrip }) {
           </button>
         </div>
 
-        {/* location */}
+        {/* location base */}
         <Row>
-          <div className="flex items-center justify-between gap-3">
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: font.ui, fontSize: 14.5, fontWeight: 700, color: T.ink }}>Sort places by distance</div>
-              <P style={{ fontSize: 12.5, marginTop: 3 }}>
-                {geo.status === "on" && "On — nearest places come first in Explore."}
-                {geo.status === "asking" && "Waiting for permission…"}
-                {geo.status === "denied" && "Blocked by your browser. Allow location for this site in browser settings, then try again."}
-                {geo.status === "unavailable" && "Location isn't available on this device."}
-                {geo.status === "idle" && "Off — places show in their usual order."}
-              </P>
-            </div>
-            {geo.status === "on" ? (
-              <button onClick={geo.off}
-                style={{ background: T.jade, border: "none", borderRadius: 999, width: 48, height: 28, position: "relative", flexShrink: 0 }}>
-                <span style={{ position: "absolute", top: 3, right: 3, width: 22, height: 22, borderRadius: "50%", background: "#fff" }} />
-              </button>
+          <div style={{ fontFamily: font.ui, fontSize: 14.5, fontWeight: 700, color: T.ink }}>Sort places by distance</div>
+          <P style={{ fontSize: 12.5, marginTop: 3 }}>Choose what "nearby" is measured from.</P>
+
+          <div className="flex gap-2" style={{ marginTop: 10 }}>
+            {BASE_TYPES.map((b) => {
+              const on = geo.type === b.id;
+              return (
+                <button key={b.id} onClick={() => geo.chooseType(b.id)}
+                  style={{
+                    flex: 1, padding: "9px 0", borderRadius: 12, fontFamily: font.ui, fontSize: 12.5, fontWeight: 700,
+                    background: on ? T.jade : T.card, color: on ? "#fff" : T.ink,
+                    border: `1px solid ${on ? T.jade : T.line}`,
+                  }}>
+                  {b.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ marginTop: 10 }}>
+            {geo.type === "live" ? (
+              <>
+                <P style={{ fontSize: 12.5 }}>
+                  {geo.status === "on" && "On — nearest places come first in Explore."}
+                  {geo.status === "asking" && "Waiting for permission…"}
+                  {geo.status === "denied" && "Blocked by your browser. Allow location for this site in browser settings, then try again."}
+                  {geo.status === "unavailable" && "Location isn't available on this device."}
+                  {geo.status === "idle" && "Off — places show in their usual order."}
+                </P>
+                <button onClick={geo.status === "on" ? geo.clear : geo.capture} disabled={geo.status === "asking"}
+                  style={{
+                    marginTop: 8, borderRadius: 12, padding: "10px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700,
+                    background: geo.status === "on" ? "none" : T.ink, color: geo.status === "on" ? T.sub : "#fff",
+                    border: geo.status === "on" ? `1px solid ${T.line}` : "none", opacity: geo.status === "asking" ? 0.6 : 1,
+                  }}>
+                  {geo.status === "on" ? "Turn off" : geo.status === "denied" ? "Try again" : "Turn on"}
+                </button>
+              </>
             ) : (
-              <button onClick={geo.request} disabled={geo.status === "asking"}
-                style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 999, width: 48, height: 28, position: "relative", flexShrink: 0, opacity: geo.status === "asking" ? 0.5 : 1 }}>
-                <span style={{ position: "absolute", top: 3, left: 3, width: 22, height: 22, borderRadius: "50%", background: T.sub }} />
-              </button>
+              <>
+                <P style={{ fontSize: 12.5 }}>
+                  {geo.fixed[geo.type]
+                    ? `Set — nearest places to your ${geo.type === "home" ? "home" : "hotel"} come first in Explore.`
+                    : `Not set yet. Stand at your ${geo.type === "home" ? "home" : "hotel"} and save it once.`}
+                </P>
+                <div className="flex gap-2" style={{ marginTop: 8 }}>
+                  <button onClick={geo.capture} disabled={geo.status === "asking"}
+                    style={{ background: T.ink, color: "#fff", border: "none", borderRadius: 12, padding: "10px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700, opacity: geo.status === "asking" ? 0.6 : 1 }}>
+                    {geo.status === "asking" ? "Locating…" : geo.fixed[geo.type] ? "Update to current location" : "Save current location"}
+                  </button>
+                  {geo.fixed[geo.type] && (
+                    <button onClick={geo.clear}
+                      style={{ background: "none", color: T.sub, border: `1px solid ${T.line}`, borderRadius: 12, padding: "10px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700 }}>
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {geo.status === "denied" && <P style={{ fontSize: 12, marginTop: 6, color: "#B23A3A" }}>Blocked by your browser. Allow location for this site, then try again.</P>}
+                {geo.status === "unavailable" && <P style={{ fontSize: 12, marginTop: 6, color: "#B23A3A" }}>Location isn't available on this device.</P>}
+              </>
             )}
           </div>
-          {geo.status === "denied" && (
-            <button onClick={geo.request}
-              style={{ marginTop: 10, background: T.ink, color: "#fff", border: "none", borderRadius: 12, padding: "10px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700 }}>
-              Try again
-            </button>
-          )}
         </Row>
 
         {/* units */}
@@ -1800,7 +1887,7 @@ export default function TravelPal() {
   const [docs, setDocs] = useState({ passport: true });
   const [flight, setFlight] = useState(null);
   const [toastMsg, setToastMsg] = useState("");
-  const geo = useGeo();
+  const geo = useBaseLocation();
   const [units, setUnits] = useState("km");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
