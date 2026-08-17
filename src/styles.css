@@ -7,3 +7,23 @@
 body {
   margin: 0;
 }
+
+/* Leaflet paints its own controls; keep them in the app's voice. */
+.leaflet-container {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: #E8EBE7;
+}
+.leaflet-control-zoom a {
+  color: #0D3B34;
+}
+.leaflet-tooltip {
+  font-size: 12px;
+  font-weight: 700;
+  color: #15201D;
+  border: none;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+}
+.leaflet-tooltip::before {
+  display: none;
+}

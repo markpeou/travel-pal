@@ -1,12 +1,14 @@
 // @ts-nocheck
 import React, { useState, useMemo } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   Plane, Stamp, Wifi, Wallet, MapPin, Backpack, Home, ChevronRight, ChevronDown,
   ShieldCheck, ExternalLink, FileText, CheckCircle2, Circle, Bell,
   Zap, CreditCard, Banknote, Smartphone, CloudRain, Sun, Wind,
   AlertTriangle, Upload, Check, Compass, Utensils, Calendar, Clock,
   Settings2, ArrowRight, Radio, Eye, Car, Bike, TrainFront, Bus, Footprints,
-  Coffee, Beer, ShoppingBag, Landmark, ArrowLeft, Search, X, Ticket, Navigation
+  Coffee, Beer, ShoppingBag, Landmark, ArrowLeft, Search, X, Ticket, Navigation, Map
 } from "lucide-react";
 
 
@@ -85,9 +87,44 @@ const ATMS = [
   { bank: "HSBC / int'l banks", limit: "Higher limits", fee: "Higher fee (~2–3%)", note: "Useful for pulling larger sums at once" },
 ];
 
+/* ---------- districts & neighbourhoods ----------
+   Districts are the top level of Explore. A hood's `area` is the named
+   sub-neighbourhood inside a district — null when the district has no
+   distinct sub-area of its own (District 3, Bình Thạnh, Phú Nhuận).
+   Every label in the app is derived from this, so tiles, filters and
+   headings can never drift apart (previously DIST_NAME and DIST_FILTERS
+   were hand-written and had drifted out of sync with each other). */
+const DISTRICTS = [
+  { id: "D1", name: "District 1" },
+  { id: "D3", name: "District 3" },
+  { id: "D4", name: "District 4" },
+  { id: "D5", name: "District 5" },
+  { id: "D2", name: "District 2" },
+  { id: "BT", name: "Bình Thạnh" },
+  { id: "PN", name: "Phú Nhuận" },
+  { id: "D7", name: "District 7" },
+];
+
+const distName = (id) =>
+  (DISTRICTS.find((d) => d.id === id) || {}).name || (id === "X" ? "Around town" : id);
+
+/* Areas belonging to a district, in listed order. */
+const areasIn = (id) => HOODS.filter((h) => h.dist === id && h.area).map((h) => h.area);
+
+/* The one label rule: "District 5 · Chợ Lớn" when a district has a single
+   named area, plain district name when it has none or several. */
+const distLabel = (id) => {
+  const a = areasIn(id);
+  return a.length === 1 ? distName(id) + " · " + a[0] : distName(id);
+};
+
+/* A neighbourhood's own label always leads with its district. */
+const hoodLabel = (h) => (h.area ? distName(h.dist) + " · " + h.area : distName(h.dist));
+
 const HOODS = [
   {
-    name: "District 1 — Đồng Khởi side",
+    id: "d1-dongkhoi",
+    area: "Đồng Khởi",
     price: "$$$",
     tags: ["First trip", "Walkable", "Landmarks"],
     feel: "The polished heart of Saigon: French-era boulevards, the Opera House, Nguyễn Huệ walking street. You can do your first three days here entirely on foot.",
@@ -97,7 +134,8 @@ const HOODS = [
     dist: "D1",
   },
   {
-    name: "District 1 — Bùi Viện",
+    id: "d1-buivien",
+    area: "Bùi Viện",
     price: "$",
     tags: ["Nightlife", "Hostels", "Loud"],
     feel: "The backpacker artery. Neon, beer crates on the pavement, music until 4am. Chaotic in the fun way, then just chaotic.",
@@ -107,7 +145,8 @@ const HOODS = [
     dist: "D1",
   },
   {
-    name: "District 3",
+    id: "d3",
+    area: null,
     price: "$$",
     tags: ["Local", "Cafés", "Colonial villas"],
     feel: "Ten minutes from D1, half the noise. Tree-lined streets, old villas turned into cafés, office workers queuing for bún at lunch. This is everyday Saigon.",
@@ -117,7 +156,8 @@ const HOODS = [
     dist: "D3",
   },
   {
-    name: "Thảo Điền (District 2)",
+    id: "d2-thaodien",
+    area: "Thảo Điền",
     price: "$$$",
     tags: ["Expat", "Leafy", "Brunch"],
     feel: "Riverside and green, with international schools, wine bars and smoothie bowls. Feels like a different city — some love the calm, some feel they've left Vietnam.",
@@ -127,7 +167,8 @@ const HOODS = [
     dist: "D2",
   },
   {
-    name: "District 4",
+    id: "d4",
+    area: null,
     price: "$",
     tags: ["Street food", "Cheap", "Untouristed"],
     feel: "One bridge from D1 and barely a tourist in sight. Dense alleys, plastic stools, and Saigon's best snail-and-seafood street.",
@@ -137,7 +178,8 @@ const HOODS = [
     dist: "D4",
   },
   {
-    name: "Chợ Lớn (District 5)",
+    id: "d5-cholon",
+    area: "Chợ Lớn",
     price: "$",
     tags: ["Chinatown", "Temples", "Markets"],
     feel: "Saigon's Chinatown — incense-thick pagodas, wholesale markets and old-school cơm tấm. The most photogenic morning in the city.",
@@ -147,7 +189,8 @@ const HOODS = [
     dist: "D5",
   },
   {
-    name: "Bình Thạnh",
+    id: "bt",
+    area: null,
     price: "$$",
     tags: ["Local indie", "Hidden bars", "Nightlife"],
     feel: "Where the city's most interesting hidden bars live, alongside Landmark 81 and riverside towers. Local-feeling, low-tourist.",
@@ -157,7 +200,8 @@ const HOODS = [
     dist: "BT",
   },
   {
-    name: "Phú Nhuận",
+    id: "pn",
+    area: null,
     price: "$",
     tags: ["Residential", "Cafés", "Everyday"],
     feel: "Quiet residential district between the airport and the centre. Neighbourhood cafés, no tourist infrastructure, real daily Saigon.",
@@ -167,7 +211,8 @@ const HOODS = [
     dist: "PN",
   },
   {
-    name: "Phú Mỹ Hưng (District 7)",
+    id: "d7-pmh",
+    area: "Phú Mỹ Hưng",
     price: "$$",
     tags: ["Planned", "Families", "Spacious"],
     feel: "Wide boulevards, actual footpaths and a large Korean and Japanese community. Feels nothing like the rest of the city.",
@@ -1043,7 +1088,7 @@ const PLACES = [
 {n:"Prem Bistro and Cafe",c:["cafe"],d:"D1",p:1,pr:"45–95k ₫",t:["Vegetarian","Café"],note:"Delightful vegetarian, mid level, not too fancy. Cute little date spot.",lat:10.77525,lng:106.68921,a:"",g:"https://maps.google.com/?cid=14767520075004034669",ax:1},
 {n:"Bánh mì thịt nướng Bà Hà",c:["eat"],d:"X",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Bánh mì counter from the saved eats list.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=8184635017035193970",ax:1},
 {n:"Bánh Mì Bà Huynh (Madam Win)",c:["eat"],d:"D4",p:1,pr:"25–60k ₫",t:["Bánh mì","Street food"],note:"Smaller than the extreme size of the touristy one everyone goes too. 55k.",lat:10.74913,lng:106.69025,a:"",g:"https://maps.google.com/?cid=8896932288202701631",ax:1},
-{n:"Saveur Café Tân Định",c:["cafe"],d:"X",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Amazing exterior looking cafe building. Indoor outdoor, leafy and rustic. Multi level.",lat:null,lng:null,a:"Tân Định",g:"https://maps.google.com/?cid=535466340715287651",ax:1},
+{n:"Saveur Café Tân Định",c:["cafe"],d:"D1",p:1,pr:"45–95k ₫",t:["Café","Coffee"],note:"Amazing exterior looking cafe building. Indoor outdoor, leafy and rustic. Multi level.",lat:null,lng:null,a:"Tân Định",g:"https://maps.google.com/?cid=535466340715287651",ax:1},
 {n:"ngâm CAFE",c:["cafe"],d:"D5",p:1,pr:"45–95k ₫",t:["Vintage","Café"],note:"Vintage aesthetic, influencer photo central, wall of croissants. Cool little leafy courtyard.",lat:10.74929,lng:106.67864,a:"",g:"https://maps.google.com/?cid=2205517350869085429",ax:1},
 {n:"Tiem Mi Huu Ky",c:["eat"],d:"D1",p:2,pr:"100–250k ₫",t:["Street food","Local eats"],note:"Wonton huge!",lat:10.79235,lng:106.70904,a:"",g:"https://maps.google.com/?cid=16899537596642219129",ax:1},
 {n:"Trần Pizza",c:["eat"],d:"D5",p:2,pr:"150–350k ₫",t:["Pizza","Local eats"],note:"Wood fired pizza.",lat:10.74808,lng:106.67806,a:"",g:"https://maps.google.com/?cid=7640938224498060475",ax:1},
@@ -1160,7 +1205,7 @@ const PLACES = [
 {n:"La Vela Saigon Hotel",c:["exp"],d:"D3",p:3,pr:"~500k ₫ day pass",t:["Pool day","Infinity pool"],note:"Epic infinity pool — buy a day pass and float above D3 for an afternoon.",lat:10.78856,lng:106.68543,a:"",g:"https://maps.google.com/?cid=15143436662454001615",ax:1},
 {n:"Isla Oasis",c:["shop","cafe"],d:"D2",p:2,pr:"150–300k ₫ min spend",t:["Pool day","Café"],note:"Pool cafe in Thảo Điền — order a coffee, claim a lounger, pretend you're on holiday.",lat:10.8035,lng:106.733,a:"Thảo Điền",g:"https://maps.google.com/?cid=18241339968731174048",ax:1},
 {n:"Mystic Night Show",c:["exp"],d:"X",p:3,pr:"from ~700k ₫",t:["Magic show","Date night"],note:"Petey Majik's magic show — polished illusion theatre; a genuinely fun date-night wildcard.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=12002210092889613469",ax:1},
-{n:"32",c:["shop"],d:"X",p:0,pr:"",t:["Mystery pin","Browse-worthy"],note:"Unlabelled saved pin — a Thảo Điền mystery. Tap through to Maps and find out.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3464939686040072350",ax:1},
+{n:"32",c:["shop"],d:"D2",p:0,pr:"",t:["Mystery pin","Browse-worthy"],note:"Unlabelled saved pin — a Thảo Điền mystery. Tap through to Maps and find out.",lat:null,lng:null,a:"",g:"https://maps.google.com/?cid=3464939686040072350",ax:1},
 {n:"CỘNG HƯỞNG Art & Craft Shop",c:["shop"],d:"D3",p:1,pr:"50–400k ₫",t:["Gifts","Handmade"],note:"Arts & craft gifts — handmade pieces that don't feel like airport souvenirs.",lat:10.77396,lng:106.68742,a:"",g:"https://maps.google.com/?cid=2229532807512517520",ax:1},
 {n:"Gốm Sài Gòn - Chi nhánh 3",c:["shop"],d:"D5",p:1,pr:"50–400k ₫",t:["Ceramics","Pottery"],note:"Pottery — affordable Vietnamese ceramics; stock up on bowls and cups.",lat:10.74823,lng:106.67917,a:"",g:"https://maps.google.com/?cid=18057531270624420998",ax:1},
 {n:"Gốm Sài Gòn",c:["shop"],d:"PN",p:1,pr:"50–400k ₫",t:["Ceramics","Pottery"],note:"Pottery — the original branch; same affordable handmade ceramics.",lat:10.80035,lng:106.66333,a:"",g:"https://maps.google.com/?cid=7950614818219475470",ax:1},
@@ -1228,21 +1273,16 @@ const PLACE_CATS = [
   { id: "exp", label: "Do", icon: Ticket },
 ];
 
+/* Derived, never hand-written — so a place tile, a filter row and a page
+   heading always say the same thing about the same district. */
 const DIST_NAME = {
-  D1: "District 1", D2: "Thảo Điền · D2", D3: "District 3", D4: "District 4",
-  D5: "D5 & West", BT: "Bình Thạnh", PN: "Phú Nhuận", D7: "D7 · Phú Mỹ Hưng", X: "Around town",
+  ...Object.fromEntries(DISTRICTS.map((d) => [d.id, distLabel(d.id)])),
+  X: "Around town",
 };
 
 const DIST_FILTERS = [
   { id: "all", label: "All districts" },
-  { id: "D1", label: "District 1" },
-  { id: "D2", label: "D2 · Thảo Điền" },
-  { id: "D3", label: "District 3" },
-  { id: "D4", label: "District 4" },
-  { id: "D5", label: "D5 · Chợ Lớn & West" },
-  { id: "BT", label: "Bình Thạnh" },
-  { id: "PN", label: "Phú Nhuận" },
-  { id: "D7", label: "D7 · Phú Mỹ Hưng" },
+  ...DISTRICTS.map((d) => ({ id: d.id, label: distLabel(d.id) })),
   { id: "X", label: "Around town" },
 ];
 
@@ -1606,8 +1646,196 @@ function PlacesBrowser({ onBack, initialDist = "all", initialCat = "all", headin
   );
 }
 
+/* ---------- district map ----------
+   Outlines come from districts.geojson in the repo (public/, served at
+   the site root) — real OpenStreetMap boundaries, not anything we drew.
+   If the file is missing or malformed the map entry points simply don't
+   render; nothing half-works.
+
+   ALIASES: our district ids vs. the names an OSM extract uses. District 2 was
+   absorbed into Thủ Đức in 2021 and the whole district tier was replaced by
+   wards on 1 Jul 2025, so a boundary file may carry any of these spellings.
+   Matching is explicit — an unmatched id is reported, never silently dropped. */
+const DIST_OSM_NAMES = {
+  D1: ["District 1", "Quận 1", "Quan 1"],
+  D2: ["District 2", "Quận 2", "Thảo Điền", "Thủ Đức", "Thu Duc", "Thành phố Thủ Đức"],
+  D3: ["District 3", "Quận 3", "Quan 3"],
+  D4: ["District 4", "Quận 4", "Quan 4"],
+  D5: ["District 5", "Quận 5", "Quan 5"],
+  D7: ["District 7", "Quận 7", "Quan 7"],
+  BT: ["Bình Thạnh", "Binh Thanh", "Quận Bình Thạnh"],
+  PN: ["Phú Nhuận", "Phu Nhuan", "Quận Phú Nhuận"],
+};
+
+/* District 2 was absorbed into Thủ Đức City in 2021, along with old
+   District 9 — so the only real boundary left is roughly 5x the old D2's
+   footprint. Thảo Điền is one corner of it, not the whole shape. Shown as
+   a caveat under the map, not silently drawn as if it were "District 2". */
+const DIST_MAP_CAVEATS = {
+  D2: "This shape is Thủ Đức City's actual boundary — it absorbed old District 2 and District 9 in 2021. Thảo Điền sits in its southwest corner, closest to D1.",
+};
+
+/* Fetch once, cache for the session. status: loading | ready | none */
+function useDistrictShapes() {
+  const [state, setState] = useState({ status: "loading", byId: null });
+  React.useEffect(() => {
+    let alive = true;
+    fetch(`${import.meta.env.BASE_URL}districts.geojson`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("no file"))))
+      .then((gj) => {
+        if (!alive) return;
+        const feats = (gj && gj.features) || [];
+        const byId = {};
+        for (const id of Object.keys(DIST_OSM_NAMES)) {
+          /* Prefer an explicit id on the feature (our own districts.geojson
+             sets one) — falls back to name-matching for any other source. */
+          let f = feats.find((ft) => (ft.properties || {}).id === id);
+          if (!f) {
+            const wanted = DIST_OSM_NAMES[id].map(norm);
+            f = feats.find((ft) => {
+              const pr = ft.properties || {};
+              const names = [pr.name, pr["name:en"], pr.NAME_2, pr.district, pr.Name].filter(Boolean);
+              return names.some((n) => wanted.includes(norm(String(n))));
+            });
+          }
+          if (f) byId[id] = f;
+        }
+        const missing = Object.keys(DIST_OSM_NAMES).filter((id) => !byId[id]);
+        if (missing.length) console.warn("districts.geojson: no outline matched", missing.join(", "));
+        setState(Object.keys(byId).length ? { status: "ready", byId } : { status: "none", byId: null });
+      })
+      .catch(() => alive && setState({ status: "none", byId: null }));
+    return () => { alive = false; };
+  }, []);
+  return state;
+}
+
+function DistrictMapSheet({ open, onClose, shapes, focus, setFocus }) {
+  const holder = React.useRef(null);
+  const map = React.useRef(null);
+  const layers = React.useRef({});
+
+  React.useEffect(() => {
+    if (!open || !holder.current || map.current) return;
+    const m = L.map(holder.current, { attributionControl: true, zoomControl: false })
+      .setView([10.782, 106.695], 12);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 18,
+    }).addTo(m);
+    L.control.zoom({ position: "bottomright" }).addTo(m);
+
+    Object.keys(shapes.byId).forEach((id) => {
+      const layer = L.geoJSON(shapes.byId[id], {
+        style: { color: T.jade, weight: 1.5, fillColor: T.jade, fillOpacity: 0.1 },
+      }).addTo(m);
+      layer.on("click", () => setFocus(id));
+      layer.bindTooltip(distName(id), { permanent: false, direction: "center" });
+      layers.current[id] = layer;
+    });
+
+    const all = L.featureGroup(Object.values(layers.current));
+    m.fitBounds(all.getBounds(), { padding: [24, 24] });
+    map.current = m;
+    setTimeout(() => m.invalidateSize(), 120);
+    return () => { m.remove(); map.current = null; layers.current = {}; };
+  }, [open]);
+
+  /* Selection drives styling and zoom — one source, no double state. */
+  React.useEffect(() => {
+    if (!map.current) return;
+    Object.keys(layers.current).forEach((id) => {
+      const on = id === focus;
+      layers.current[id].setStyle({
+        color: on ? T.accent : T.jade,
+        weight: on ? 2.5 : 1.5,
+        fillColor: on ? T.accent : T.jade,
+        fillOpacity: on ? 0.28 : 0.1,
+      });
+      if (on) layers.current[id].bringToFront();
+    });
+    if (focus && layers.current[focus]) {
+      map.current.fitBounds(layers.current[focus].getBounds(), { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [focus, open]);
+
+  if (!open) return null;
+  const ids = Object.keys(shapes.byId || {});
+  const count = focus ? PLACES.filter((p) => p.d === focus).length : 0;
+
+  return (
+    <>
+      <div onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(21,32,29,0.45)", zIndex: 40 }} />
+      <div style={{
+        position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: 0, width: "100%", maxWidth: 480,
+        background: T.bg, borderRadius: "26px 26px 0 0", zIndex: 41, maxHeight: "90vh",
+        display: "flex", flexDirection: "column", overflow: "hidden",
+      }}>
+        <div className="flex items-center justify-between" style={{ padding: "16px 20px 12px" }}>
+          <div>
+            <Eyebrow>Where things are</Eyebrow>
+            <H size={20} style={{ marginTop: 2 }}>Saigon by district</H>
+          </div>
+          <button onClick={onClose} aria-label="Close"
+            style={{ background: T.card, border: `1px solid ${T.line}`, borderRadius: 999, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={16} color={T.sub} />
+          </button>
+        </div>
+
+        <div ref={holder} style={{ height: "46vh", minHeight: 240, background: "#E8EBE7" }} />
+
+        <div style={{ padding: "12px 20px 0" }}>
+          <div className="flex gap-2 overflow-x-auto" style={{ paddingBottom: 10 }}>
+            {ids.map((id) => (
+              <button key={id} onClick={() => setFocus(id === focus ? null : id)}
+                style={{
+                  flexShrink: 0, border: `1px solid ${id === focus ? T.accent : T.line}`,
+                  background: id === focus ? T.accentSoft : T.card, color: id === focus ? "#8A6D25" : T.ink,
+                  borderRadius: 999, padding: "8px 14px", fontFamily: font.ui, fontSize: 12.5, fontWeight: 700,
+                }}>
+                {distName(id)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding: "0 20px 22px", overflowY: "auto" }}>
+          {focus ? (
+            <Card style={{ padding: 14 }}>
+              <div style={{ fontFamily: font.display, fontSize: 17, fontWeight: 600, color: T.ink }}>{distLabel(focus)}</div>
+              <P style={{ fontSize: 12.5, marginTop: 4 }}>
+                {count ? `${count} places in the guide` : "No places in the guide yet"}
+                {areasIn(focus).length > 1 ? ` · ${areasIn(focus).join(", ")}` : ""}
+              </P>
+              {DIST_MAP_CAVEATS[focus] && (
+                <div style={{ background: T.accentSoft, borderRadius: 12, padding: 10, marginTop: 10, display: "flex", gap: 8 }}>
+                  <AlertTriangle size={13} color="#8A6D25" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <P style={{ fontSize: 11.5, color: "#6E5720" }}>{DIST_MAP_CAVEATS[focus]}</P>
+                </div>
+              )}
+            </Card>
+          ) : (
+            <P style={{ fontSize: 12.5 }}>Tap a shape or a name to see which district is which, and what sits next to it.</P>
+          )}
+          <P style={{ fontSize: 11.5, marginTop: 12, color: T.sub }}>
+            Districts stopped being official units on 1 Jul 2025, when Vietnam moved to wards.
+            Hotels, drivers and locals still use these names, so we do too. Outlines show the
+            pre-2025 districts.
+          </P>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function ExploreScreen({ trip, geo, units, openSettings }) {
   const [view, setView] = useState(null); // null | {type:'hood'|'places', ...}
+  const [openDist, setOpenDist] = useState(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mapFocus, setMapFocus] = useState(null);
+  const shapes = useDistrictShapes();
+  const hasMap = shapes.status === "ready";
+  const aroundCount = PLACES.filter((p) => p.d === "X").length;
 
   if (view && view.type === "places") {
     return <PlacesBrowser onBack={() => setView(null)} initialDist={view.dist || "all"}
@@ -1615,17 +1843,17 @@ function ExploreScreen({ trip, geo, units, openSettings }) {
   }
 
   if (view && view.type === "hood") {
-    const h = HOODS.find((x) => x.name === view.name);
+    const h = HOODS.find((x) => x.id === view.id);
     const count = PLACES.filter((p) => p.d === h.dist).length;
     return (
       <div className="flex flex-col gap-4">
         <button onClick={() => setView(null)} className="flex items-center gap-2"
           style={{ background: "none", border: "none", padding: "4px 0", fontFamily: font.ui, fontSize: 13.5, fontWeight: 700, color: T.jade, alignSelf: "flex-start" }}>
-          <ArrowLeft size={16} /> All neighbourhoods
+          <ArrowLeft size={16} /> Explore
         </button>
         <div>
           <span style={{ fontFamily: font.ui, fontSize: 12, fontWeight: 700, color: "#8A6D25" }}>{h.price}</span>
-          <H size={26} style={{ marginTop: 4 }}>{h.name}</H>
+          <H size={26} style={{ marginTop: 4 }}>{hoodLabel(h)}</H>
           <div className="flex gap-2 flex-wrap" style={{ marginTop: 10 }}>
             {h.tags.map((t) => <Tag key={t}>{t}</Tag>)}
           </div>
@@ -1648,24 +1876,39 @@ function ExploreScreen({ trip, geo, units, openSettings }) {
           <AlertTriangle size={15} color="#8A6D25" style={{ flexShrink: 0, marginTop: 2 }} />
           <P style={{ color: "#6E5720" }}>{h.watch}</P>
         </div>
+        {hasMap && (
+          <button onClick={() => { setMapFocus(h.dist); setMapOpen(true); }}
+            className="flex items-center justify-center gap-2"
+            style={{ background: T.card, color: T.jade, border: `1px solid ${T.line}`, borderRadius: 18, padding: "14px 0", fontFamily: font.ui, fontSize: 14, fontWeight: 700 }}>
+            <Map size={15} /> Where is {distName(h.dist)}?
+          </button>
+        )}
         {count > 0 && (
-          <button onClick={() => setView({ type: "places", dist: h.dist, heading: h.name })}
+          <button onClick={() => setView({ type: "places", dist: h.dist, heading: hoodLabel(h) })}
             className="flex items-center justify-center gap-2"
             style={{ background: T.ink, color: "#fff", border: "none", borderRadius: 18, padding: "15px 0", fontFamily: font.ui, fontSize: 14.5, fontWeight: 700 }}>
             See {count} places here <ArrowRight size={16} />
           </button>
         )}
+        <DistrictMapSheet open={mapOpen} onClose={() => setMapOpen(false)}
+          shapes={shapes} focus={mapFocus} setFocus={setMapFocus} />
       </div>
     );
   }
 
-  /* ---- overview: neighbourhoods first, then the full guide ---- */
+  /* ---- overview: districts first, opened to their neighbourhoods ---- */
   return (
     <div className="flex flex-col gap-4">
       <div>
         <Eyebrow>Explore</Eyebrow>
         <H size={26}>Start with where you'll stay.</H>
-        <P style={{ marginTop: 8 }}>Read the neighbourhoods first — then dive into {PLACES.length} places across the city.</P>
+        <P style={{ marginTop: 8 }}>Read the districts first — then dive into {PLACES.length} places across the city.</P>
+        {hasMap && (
+          <button onClick={() => { setMapFocus(null); setMapOpen(true); }} className="flex items-center gap-1.5"
+            style={{ marginTop: 12, background: T.jade, border: "none", borderRadius: 999, padding: "9px 16px", fontFamily: font.ui, fontSize: 13, fontWeight: 700, color: "#fff" }}>
+            <Map size={14} /> See them on a map
+          </button>
+        )}
       </div>
 
       <button onClick={() => setView({ type: "places", heading: "All places" })}
@@ -1684,26 +1927,96 @@ function ExploreScreen({ trip, geo, units, openSettings }) {
       </button>
 
       <div>
-        <Eyebrow>Neighbourhoods</Eyebrow>
+        <Eyebrow>Districts</Eyebrow>
         <div className="flex flex-col gap-2" style={{ marginTop: 8 }}>
-          {HOODS.map((h) => (
-            <Card key={h.name} onClick={() => setView({ type: "hood", name: h.name })} style={{ padding: 16 }}>
-              <div className="flex items-center justify-between">
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={14} color={T.jade} style={{ flexShrink: 0 }} />
-                    <span style={{ fontFamily: font.display, fontSize: 16, fontWeight: 600, color: T.ink }}>{h.name}</span>
+          {DISTRICTS.map((d) => {
+            const hoods = HOODS.filter((h) => h.dist === d.id);
+            const count = PLACES.filter((p) => p.d === d.id).length;
+            const open = openDist === d.id;
+            /* Price band across the district: "$–$$$" when its areas differ. */
+            const bands = [...new Set(hoods.map((h) => h.price))];
+            const band = bands.length > 1
+              ? bands.sort((a, b) => a.length - b.length)[0] + "–" + bands.sort((a, b) => b.length - a.length)[0]
+              : bands[0] || "";
+            return (
+              <div key={d.id} style={{ background: T.card, borderRadius: 20, border: `1px solid ${T.line}`, overflow: "hidden" }}>
+                <button onClick={() => setOpenDist(open ? null : d.id)}
+                  className="flex items-center justify-between w-full"
+                  style={{ background: "none", border: "none", padding: 16, textAlign: "left" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} color={T.jade} style={{ flexShrink: 0 }} />
+                      <span style={{ fontFamily: font.display, fontSize: 16, fontWeight: 600, color: T.ink }}>{d.name}</span>
+                    </div>
+                    <P style={{ fontSize: 12.5, marginTop: 4 }}>
+                      {hoods.filter((h) => h.area).map((h) => h.area).join(" · ") || hoods.map((h) => h.tags[0]).join(" · ")}
+                      {count ? ` · ${count} places` : ""}
+                    </P>
                   </div>
-                  <P style={{ fontSize: 12.5, marginTop: 4 }}>{h.tags.join(" · ")}</P>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0" style={{ marginLeft: 10 }}>
-                  <span style={{ fontFamily: font.ui, fontSize: 12, fontWeight: 700, color: "#8A6D25" }}>{h.price}</span>
-                  <ChevronRight size={15} color={T.sub} />
-                </div>
+                  <div className="flex items-center gap-2 flex-shrink-0" style={{ marginLeft: 10 }}>
+                    <span style={{ fontFamily: font.ui, fontSize: 12, fontWeight: 700, color: "#8A6D25" }}>{band}</span>
+                    <ChevronDown size={15} color={T.sub}
+                      style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .18s" }} />
+                  </div>
+                </button>
+
+                {open && (
+                  <div style={{ borderTop: `1px solid ${T.line}`, background: "#FAFBF9" }}>
+                    {hoods.map((h) => (
+                      <button key={h.id} onClick={() => setView({ type: "hood", id: h.id })}
+                        className="flex items-center justify-between w-full"
+                        style={{ background: "none", border: "none", borderBottom: `1px solid ${T.line}`, padding: "13px 16px", textAlign: "left" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: font.ui, fontSize: 14, fontWeight: 700, color: T.ink }}>
+                            {h.area || d.name}
+                          </div>
+                          <P style={{ fontSize: 12, marginTop: 3 }}>{h.tags.join(" · ")}</P>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0" style={{ marginLeft: 10 }}>
+                          <span style={{ fontFamily: font.ui, fontSize: 11.5, fontWeight: 700, color: "#8A6D25" }}>{h.price}</span>
+                          <ChevronRight size={14} color={T.sub} />
+                        </div>
+                      </button>
+                    ))}
+                    <div className="flex">
+                      {hasMap && (
+                        <button onClick={() => { setMapFocus(d.id); setMapOpen(true); }}
+                          className="flex items-center justify-center gap-1.5"
+                          style={{ flex: 1, background: "none", border: "none", borderRight: `1px solid ${T.line}`, padding: "13px 10px", fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.jade }}>
+                          <Map size={13} /> Where is it?
+                        </button>
+                      )}
+                      {count > 0 && (
+                        <button onClick={() => setView({ type: "places", dist: d.id, heading: distLabel(d.id) })}
+                          className="flex items-center justify-center gap-1.5"
+                          style={{ flex: 1, background: "none", border: "none", padding: "13px 10px", fontFamily: font.ui, fontSize: 12.5, fontWeight: 700, color: T.jade }}>
+                          See {count} places <ArrowRight size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            </Card>
-          ))}
+            );
+          })}
         </div>
+
+        {/* The honest bucket: places we hold but can't yet place in a district. */}
+        {aroundCount > 0 && (
+          <Card onClick={() => setView({ type: "places", dist: "X", heading: "Around town" })}
+            style={{ padding: 16, marginTop: 8 }}>
+            <div className="flex items-center justify-between">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="flex items-center gap-2">
+                  <Compass size={14} color={T.sub} style={{ flexShrink: 0 }} />
+                  <span style={{ fontFamily: font.display, fontSize: 16, fontWeight: 600, color: T.ink }}>Around town</span>
+                </div>
+                <P style={{ fontSize: 12.5, marginTop: 4 }}>{aroundCount} places outside these districts, or not yet mapped to one</P>
+              </div>
+              <ChevronRight size={15} color={T.sub} style={{ marginLeft: 10, flexShrink: 0 }} />
+            </div>
+          </Card>
+        )}
       </div>
 
       <div>
@@ -1733,6 +2046,9 @@ function ExploreScreen({ trip, geo, units, openSettings }) {
           })}
         </div>
       </div>
+
+      <DistrictMapSheet open={mapOpen} onClose={() => setMapOpen(false)}
+        shapes={shapes} focus={mapFocus} setFocus={setMapFocus} />
     </div>
   );
 }
