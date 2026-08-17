@@ -32,6 +32,86 @@ const font = {
   ui: "'Instrument Sans', -apple-system, sans-serif",
 };
 
+/* ---------- brand mark ----------
+   The Lotus Pin: a map pin with a lotus opening inside it, gold seed at the
+   centre. Geometry never changes — only the fill and the surface treatment.
+     size >= 22  → deboss (pressed into the surface)
+     20–21       → flat (filter is invisible at this scale, so skip the cost)
+     < 20        → micro (petals turn to mush; pin + seed only)
+   tone="dark" inverts it for use on a jade field. */
+const MARK_PIN = "M32 58C32 58 52 40 52 26A20 20 0 0 0 12 26C12 40 32 58 32 58Z";
+const MARK_PETALS = [
+  "M18.88 18.91C27.15 20.19 32.14 25.93 32 34C23.99 33.01 19 27.28 18.88 18.91Z",
+  "M32 14C37.4 20.4 37.4 28 32 34C26.6 28 26.6 20.4 32 14Z",
+  "M45.12 18.91C45 27.28 40.01 33.01 32 34C31.86 25.93 36.85 20.19 45.12 18.91Z",
+];
+
+function TravelPalMark({ size = 24, tone = "light", variant = "auto", style }) {
+  const uid = React.useId().replace(/:/g, "");
+  const v = variant !== "auto" ? variant : size < 20 ? "micro" : size < 22 ? "flat" : "deboss";
+  const pinFill = tone === "dark" ? T.sand : T.jade;
+  const petalFill = tone === "dark" ? T.jade : T.sand;
+  const common = {
+    width: size, height: size, viewBox: "0 0 64 64",
+    role: "img", "aria-label": "Travel Pal",
+    style: { display: "block", flexShrink: 0, ...style },
+  };
+
+  if (v === "micro") {
+    return (
+      <svg {...common}>
+        <path d={MARK_PIN} fill={pinFill} />
+        <circle cx="32" cy="25" r="7.5" fill={T.gold} />
+      </svg>
+    );
+  }
+
+  const art = (
+    <>
+      <path d={MARK_PIN} fill={pinFill} />
+      <g fill={petalFill}>{MARK_PETALS.map((d, i) => <path key={i} d={d} />)}</g>
+      <circle cx="32" cy="37.5" r="3" fill={T.gold} />
+    </>
+  );
+
+  if (v === "flat") return <svg {...common}>{art}</svg>;
+
+  const fid = "tpDeboss-" + uid;
+  return (
+    <svg {...common}>
+      <defs>
+        <filter id={fid} x="-25%" y="-25%" width="150%" height="150%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="1.1" result="b" />
+          <feOffset in="b" dx="0" dy="1.5" result="o" />
+          <feComposite in="SourceAlpha" in2="o" operator="out" result="i" />
+          <feFlood floodColor="#04211B" floodOpacity="0.55" />
+          <feComposite in2="i" operator="in" result="s" />
+          <feMerge>
+            <feMergeNode in="SourceGraphic" />
+            <feMergeNode in="s" />
+          </feMerge>
+        </filter>
+      </defs>
+      <g filter={"url(#" + fid + ")"}>{art}</g>
+    </svg>
+  );
+}
+
+/* The one lockup. The mark now does the job the glyph used to. Don't re-space it by hand. */
+function Brand({ size = 22, tone = "light" }) {
+  return (
+    <span className="flex items-center" style={{ gap: 8 }}>
+      <TravelPalMark size={size} tone={tone} />
+      <span style={{
+        fontFamily: font.display, fontStyle: "italic", fontSize: 15,
+        color: tone === "dark" ? T.sand : T.jade, whiteSpace: "nowrap",
+      }}>
+        travelpal việt nam
+      </span>
+    </span>
+  );
+}
+
 /* ---------- data ---------- */
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -348,8 +428,9 @@ function Onboarding({ onDone }) {
       body: (
         <div className="flex flex-col gap-4">
           <div style={{
-            background: T.jade, borderRadius: 24, padding: 20, color: "#F2F5F0", textAlign: "center",
+            background: T.jade, borderRadius: 24, padding: "24px 20px 20px", color: "#F2F5F0", textAlign: "center",
           }}>
+            <TravelPalMark size={58} tone="dark" style={{ margin: "0 auto 16px" }} />
             <div style={{ fontFamily: font.display, fontSize: 32, fontWeight: 700, lineHeight: 1.1 }}>
               Visa handled. Documents safe. Questions answered.
             </div>
@@ -433,7 +514,7 @@ function Onboarding({ onDone }) {
   return (
     <div style={{ height: "100%", background: T.sand, display: "flex", flexDirection: "column", padding: "26px 22px 22px", overflowY: "auto" }}>
       <div className="flex items-center justify-between">
-        <span style={{ fontFamily: font.display, fontStyle: "italic", fontSize: 15, color: T.jade }}>travelpal ▲ việt nam</span>
+        <Brand />
         {step > 0 && (
           <div className="flex gap-1.5">
             {steps.map((_, i) => (
@@ -2326,7 +2407,7 @@ export default function TravelPal() {
         ) : (
           <>
             <div className="flex items-center justify-between" style={{ padding: "16px 22px 8px", fontFamily: font.ui, fontSize: 13, fontWeight: 600, color: T.ink, position: "sticky", top: 0, background: T.bg, zIndex: 20 }}>
-              <span style={{ fontFamily: font.display, fontStyle: "italic", fontSize: 15, color: T.jade }}>travelpal ▲ việt nam</span>
+              <Brand />
               <button onClick={() => setSettingsOpen(true)} title="Settings"
                 style={{ background: "none", border: "none", padding: 0, display: "flex" }}>
                 <Settings2 size={16} color={T.sub} />
