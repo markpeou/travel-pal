@@ -2,13 +2,15 @@ name: Fetch OSM extract
 
 # Manual, one-off: runs fetch_osm.py on a runner with real internet access
 # (the dev sandbox this repo is normally edited in has no route to the
-# Overpass API) and uploads the resulting osm_hcmc.json as a downloadable
-# artifact. Never runs automatically.
+# Overpass API, and it turns out no route to Actions' artifact blob storage
+# either) and pushes the resulting osm_hcmc.json straight to the
+# osm-extract-output branch, since plain git push/fetch is the one thing
+# proven to work from that sandbox. Never runs automatically.
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   fetch:
@@ -25,9 +27,12 @@ jobs:
       - name: Run fetch_osm.py
         run: python3 fetch_osm.py
 
-      - name: Upload extract
-        uses: actions/upload-artifact@v4
-        with:
-          name: osm_hcmc
-          path: osm_hcmc.json
-          retention-days: 7
+      - name: Push extract to osm-extract-output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan osm-extract-output
+          git rm -rf --cached . >/dev/null
+          git add -f osm_hcmc.json
+          git commit -m "OSM extract $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push --force origin osm-extract-output
