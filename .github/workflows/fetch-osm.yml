@@ -1,0 +1,33 @@
+name: Fetch OSM extract
+
+# Manual, one-off: runs fetch_osm.py on a runner with real internet access
+# (the dev sandbox this repo is normally edited in has no route to the
+# Overpass API) and uploads the resulting osm_hcmc.json as a downloadable
+# artifact. Never runs automatically.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run fetch_osm.py
+        run: python3 fetch_osm.py
+
+      - name: Upload extract
+        uses: actions/upload-artifact@v4
+        with:
+          name: osm_hcmc
+          path: osm_hcmc.json
+          retention-days: 7
