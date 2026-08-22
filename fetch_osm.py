@@ -1,123 +1,146 @@
 #!/usr/bin/env python3
 """
-fetch_osm.py — regenerate public/districts.geojson from OpenStreetMap.
+fetch_osm.py — pull ONE OpenStreetMap extract for Ho Chi Minh City.
 
-Queries the public Overpass API for the boundary of each Ho Chi Minh City
-district used by the Explore district map, and writes a FeatureCollection
-in the same shape the app already expects: one Feature per district with
-properties {id, name} and a Polygon/MultiPolygon geometry.
+Why one bulk query instead of 412 lookups:
+  - Nominatim's usage policy forbids systematic/bulk geocoding. Overpass is the
+    correct tool for "give me all POIs in this box with their tags".
+  - 1 request instead of 412 = no rate-limit risk, no per-place API budget.
+  - The extract is a file. Matching then runs offline, deterministically, and is
+    re-runnable without touching the network again.
 
-The district id -> OSM boundary name pairs below must stay in sync with
-DIST_OSM_NAMES in src/App.tsx — that's what the app uses to match this
-file's features back to D1/D2/.../PN. District 2 was absorbed into Thu
-Duc City in 2021, so its OSM boundary is Thu Duc City's actual (much
-larger) shape, not old District 2 — the app already carries a caveat
-about this in DIST_MAP_CAVEATS.
+Run locally (Claude's sandbox has no network access):
 
-Requires: requests, osm2geojson
-    pip install -r requirements.txt
+    python3 fetch_osm.py                 # writes osm_hcmc.json
+    python3 fetch_osm.py --out foo.json
 
-Run from the repo root:
-    python3 fetch_osm.py
+Then upload the output back into the Travel Pal chat.
 """
 
+import argparse
 import json
 import sys
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
-import requests
+# Saigon bounding box — matches the bounds already used for coordinate
+# validation in build_places.py (lat 10.6–10.9, lng 106.5–106.9).
+BBOX = (10.60, 106.50, 10.92, 106.92)  # south, west, north, east
 
-try:
-    import osm2geojson
-except ImportError:
-    sys.exit(
-        "Missing dependency 'osm2geojson'. Install with:\n"
-        "    pip install -r requirements.txt"
-    )
+ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+]
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-OUTPUT_PATH = "public/districts.geojson"
-REQUEST_TIMEOUT = 90
-POLITE_DELAY_SECONDS = 1  # Overpass's public instance asks for spacing between queries
-
-# (our district id, OSM administrative boundary name) — keep in sync with
-# DIST_OSM_NAMES in src/App.tsx.
-DISTRICTS = [
-    ("D1", "Quận 1"),
-    ("D2", "Thành phố Thủ Đức"),  # absorbed old District 2 + District 9 in 2021
-    ("D3", "Quận 3"),
-    ("D4", "Quận 4"),
-    ("D5", "Quận 5"),
-    ("D7", "Quận 7"),
-    ("BT", "Quận Bình Thạnh"),
-    ("PN", "Quận Phú Nhuận"),
+# Only the POI classes Travel Pal actually has categories for:
+# eat / drink / cafe / shop / exp
+SELECTORS = [
+    'node["amenity"~"^(restaurant|cafe|bar|pub|fast_food|ice_cream|food_court|nightclub|biergarten|marketplace)$"]',
+    'way["amenity"~"^(restaurant|cafe|bar|pub|fast_food|ice_cream|food_court|nightclub|biergarten|marketplace)$"]',
+    'node["shop"]',
+    'way["shop"]',
+    'node["tourism"~"^(museum|gallery|attraction|artwork|viewpoint|theme_park|zoo|aquarium)$"]',
+    'way["tourism"~"^(museum|gallery|attraction|artwork|viewpoint|theme_park|zoo|aquarium)$"]',
+    'node["leisure"~"^(park|garden|fitness_centre|spa|water_park)$"]',
+    'way["leisure"~"^(park|garden|fitness_centre|spa|water_park)$"]',
+    'node["historic"]',
+    'way["historic"]',
+    'node["amenity"~"^(place_of_worship|cinema|theatre|arts_centre|library)$"]',
+    'way["amenity"~"^(place_of_worship|cinema|theatre|arts_centre|library)$"]',
 ]
 
 
-def fetch_boundary(osm_name):
-    """Ask Overpass for the named administrative boundary inside Ho Chi Minh City."""
-    query = f"""
-    [out:json][timeout:{REQUEST_TIMEOUT}];
-    area["name"="Thành phố Hồ Chí Minh"]["boundary"="administrative"]->.hcmc;
-    relation["boundary"="administrative"]["name"="{osm_name}"](area.hcmc);
-    out body;
-    >;
-    out skel qt;
-    """
-    resp = requests.post(OVERPASS_URL, data={"data": query}, timeout=REQUEST_TIMEOUT)
-    resp.raise_for_status()
-    return resp.json()
+def build_query(bbox, timeout=180):
+    s, w, n, e = bbox
+    box = f"({s},{w},{n},{e})"
+    body = "\n  ".join(f"{sel}{box};" for sel in SELECTORS)
+    return f"[out:json][timeout:{timeout}];\n(\n  {body}\n);\nout center tags;"
 
 
-def largest_polygon(geojson_features):
-    """An administrative relation can convert into several feature fragments;
-    the boundary itself is the one with the most geometry data."""
-    polys = [f for f in geojson_features if f["geometry"]["type"] in ("Polygon", "MultiPolygon")]
-    if not polys:
-        return None
-    return max(polys, key=lambda f: len(json.dumps(f["geometry"])))
+def fetch(query, endpoints=ENDPOINTS, attempts=3):
+    data = urllib.parse.urlencode({"data": query}).encode()
+    last = None
+    for endpoint in endpoints:
+        for attempt in range(1, attempts + 1):
+            try:
+                print(f"  → {endpoint} (attempt {attempt})", file=sys.stderr)
+                req = urllib.request.Request(
+                    endpoint,
+                    data=data,
+                    headers={"User-Agent": "travel-pal-prototype/0.1 (github.com/markpeou/travel-pal)"},
+                )
+                with urllib.request.urlopen(req, timeout=600) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as err:
+                last = err
+                print(f"    failed: {err}", file=sys.stderr)
+                # Overpass returns 429/504 under load. Back off, don't hammer.
+                time.sleep(10 * attempt)
+    raise SystemExit(f"All Overpass endpoints failed. Last error: {last}")
+
+
+def normalise(raw):
+    """Flatten Overpass elements to {id, type, lat, lng, tags}."""
+    out = []
+    for el in raw.get("elements", []):
+        if el.get("type") == "node":
+            lat, lng = el.get("lat"), el.get("lon")
+        else:
+            centre = el.get("center") or {}
+            lat, lng = centre.get("lat"), centre.get("lon")
+        if lat is None or lng is None:
+            continue
+        tags = el.get("tags") or {}
+        if not tags:
+            continue
+        out.append(
+            {
+                "id": f"{el['type']}/{el['id']}",
+                "type": el["type"],
+                "lat": lat,
+                "lng": lng,
+                "tags": tags,
+            }
+        )
+    return out
 
 
 def main():
-    features = []
-    for our_id, osm_name in DISTRICTS:
-        print(f"Fetching {our_id} ({osm_name})...", file=sys.stderr)
-        try:
-            raw = fetch_boundary(osm_name)
-        except requests.RequestException as e:
-            print(f"  ERROR: request failed for {our_id} ({osm_name}): {e}", file=sys.stderr)
-            continue
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default="osm_hcmc.json")
+    ap.add_argument("--raw", help="also write the unmodified Overpass response here")
+    args = ap.parse_args()
 
-        converted = osm2geojson.json2geojson(raw)
-        best = largest_polygon(converted["features"])
-        if best is None:
-            print(f"  WARNING: no polygon found for {our_id} ({osm_name}) — skipping", file=sys.stderr)
-            continue
+    query = build_query(BBOX)
+    print("Querying Overpass for HCMC POIs (this takes 30–120s)...", file=sys.stderr)
+    raw = fetch(query)
 
-        geometry = best["geometry"]
-        if geometry["type"] == "Polygon":
-            geometry = {"type": "MultiPolygon", "coordinates": [geometry["coordinates"]]}
+    if args.raw:
+        with open(args.raw, "w", encoding="utf-8") as fh:
+            json.dump(raw, fh)
+        print(f"Wrote raw response → {args.raw}", file=sys.stderr)
 
-        features.append({
-            "type": "Feature",
-            "properties": {"id": our_id, "name": osm_name},
-            "geometry": geometry,
-        })
-        time.sleep(POLITE_DELAY_SECONDS)
+    elements = normalise(raw)
 
-    found_ids = {f["properties"]["id"] for f in features}
-    missing = [d for d, _ in DISTRICTS if d not in found_ids]
-    if missing:
-        print(f"WARNING: missing boundaries for {missing} — districts.geojson will be incomplete "
-              "for these; the app's district map simply won't show a shape for them.", file=sys.stderr)
+    named = sum(1 for e in elements if e["tags"].get("name"))
+    payload = {
+        "source": "OpenStreetMap via Overpass API",
+        "licence": "ODbL 1.0 — attribution required in any UI that displays this data",
+        "bbox": {"south": BBOX[0], "west": BBOX[1], "north": BBOX[2], "east": BBOX[3]},
+        "fetched_at": time.strftime("%Y-%m-%d"),
+        "count": len(elements),
+        "named_count": named,
+        "elements": elements,
+    }
 
-    if not features:
-        sys.exit("No boundaries fetched — not overwriting an existing districts.geojson with nothing.")
+    with open(args.out, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, ensure_ascii=False)
 
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump({"type": "FeatureCollection", "features": features}, f, ensure_ascii=False)
-
-    print(f"Wrote {OUTPUT_PATH} ({len(features)}/{len(DISTRICTS)} districts)", file=sys.stderr)
+    print(f"\nWrote {args.out}", file=sys.stderr)
+    print(f"  {len(elements):,} POIs ({named:,} with a name tag)", file=sys.stderr)
+    print("\nUpload this file back into the Travel Pal chat.", file=sys.stderr)
 
 
 if __name__ == "__main__":
